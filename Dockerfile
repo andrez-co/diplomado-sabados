@@ -5,11 +5,12 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copiar requerimientos e instalarlos
-COPY src/requirements.txt ./
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar el código fuente del proyecto
-COPY src/ ./
+# Copiar el código fuente y las pruebas
+COPY src/ ./src/
+COPY tests.py ./
 
 # Comando por defecto al ejecutar el contenedor
 CMD ["pytest", "tests.py"]

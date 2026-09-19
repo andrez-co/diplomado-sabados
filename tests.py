@@ -1,4 +1,5 @@
-from calculadora import sumar, Calculadora
+from src.calculadora import Calculadora, sumar
+
 
 # Prueba Unitaria
 def test_sumar():
