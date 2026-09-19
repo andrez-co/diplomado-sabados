@@ -1,7 +1,13 @@
-from main import Calculator
+from src.calculadora import Calculadora, sumar
 
-def test_sums_2_numbers():
-    assert Calculator().suma(2, 2) == 4
 
-def test_resta_2_numbers():
-    assert Calculator().resta(5, 3) == 2
+# Prueba Unitaria
+def test_sumar():
+    assert sumar(2, 3) == 5
+
+
+# Prueba de Integración
+def test_integracion_calculadora():
+    calc = Calculadora()
+    resultado = calc.operar(10, 5)
+    assert resultado == 15
