@@ -27,9 +27,9 @@ flowchart LR
 ### Semáforo de Salud del Flujo
 | Estado | Elemento del Flujo | Observaciones / Aprendizajes |
 | :--- | :--- | :--- |
-| 🟢 **Funciona Bien** | *Ej. Tests unitarios rápidos en local* | *Registrar lo que ya aporta valor y estabilidad* |
-| 🟡 **Genera Fricción** | *Ej. Esperas prolongadas en Code Review* | *Puntos a optimizar con PRs más pequeños* |
-| 🔴 **Rompe Flujo / Miedo** | *Ej. Merge conflicts masivos por ramas largas* | *Eliminar con integración diaria a `main`* |
+| 🟢 **Funciona Bien** | Commits locales frecuentes, tests automáticos y Docker build | Commits frecuentes locales, tests unitarios automáticos y build de imagen Docker en CI. |
+| 🟡 **Genera Fricción** | Ramas de larga duración | Ramas de larga duración alejadas de main acumulando riesgo. |
+| 🔴 **Rompe Flujo / Miedo** | Cuello de botella en autorizaciones de merge | Cuello de botella por dependencia exclusiva de la aprobación del Administrador para autorizar merges a main. |
 
 > **Preguntas Clave del Equipo:**
 > 1. *¿Cuánto tiempo vive normalmente una rama de desarrollo en nuestro repo?* (Meta TBD: `< 24 horas`).
@@ -63,19 +63,16 @@ flowchart LR
 └─────────────────┴────────────────────────────┴─────────────────────────┘
 ```
 
-### Compromisos Individuales (*Post-its del Taller*)
+### Compromisos Individuales (*Acuerdos del Taller*)
 > *"Una cosa concreta que voy a hacer diferente en mi rol a partir de mañana"*
 
 * **Product Owner:**
-  * [ ] *Ejemplo:* Dividir historias de usuario en entregas con Feature Toggles definidos en el refinamiento.
-  * [ ] *(Espacio para compromiso del PO)*
+  * [x] Dividiré historias en bloques de 1 día y usaré Feature Toggles en ConfigCat para desacoplar despliegues de lanzamientos comerciales.
 * **Developers:**
-  * [ ] *Ejemplo:* No dejar ninguna rama viva más de 24 horas e integrar con PRs de menos de 200 líneas.
-  * [ ] *(Espacio para compromiso del Developer 1)*
-  * [ ] *(Espacio para compromiso del Developer 2)*
+  * [x] No dejaré ramas abiertas más de 24 horas y revisaré las Pull Requests de mis compañeros en menos de 2 horas para evitar cuellos de botella.
+  * [x] Realizaré commits atómicos con pruebas locales y asumiré la responsabilidad inmediata de reparar el pipeline de CI si un merge genera fallos.
 * **Scrum Master:**
-  * [ ] *Ejemplo:* Monitorear en las Dailies si hay ramas estancadas y facilitar la revisión inmediata de PRs.
-  * [ ] *(Espacio para compromiso del SM)*
+  * [x] Centraré las Daily Scrums en destrabar integraciones a main y gestionaré la eliminación de bloqueos burocráticos en permisos de GitHub.
 
 ---
 
@@ -113,39 +110,31 @@ Para que una historia o tarea se considere **Done**, debe cumplir con:
 
 ---
 
-## 🛠️ 7. Dinámica: "Traduce tu Realidad" (Template de Slicing)
-*Utilizar esta plantilla para descomponer historias grandes en rebanadas aptas para TBD.*
+## 🛠️ 7. Dinámica: "Traduce tu Realidad" (Ficha Técnica de Slicing)
+*Ficha técnica operativa para descomponer historias en rebanadas verticales aptas para TBD.*
 
 ### 📋 Ficha de Historia Sliceada
-```markdown
-### Historia: [Nombre de la Historia]
 
-#### 1. Rebanada 1 (Día 1):
-* **Alcance:** Creación del endpoint base + modelo de datos (sin UI activa).
-* **Estrategia TBD / Flag:** `FLAG_NUEVA_FUNCIONALIDAD = False`
-* **Criterio de Verificación:** Test unitario + Test de integración pasando en CI.
-
-#### 2. Rebanada 2 (Día 2):
-* **Alcance:** Conexión con lógica de negocio y validaciones.
-* **Estrategia TBD / Flag:** Flag activo solo para usuarios internos / staging.
-* **Criterio de Verificación:** Pruebas E2E y validación con PO.
-
-#### 3. Rebanada 3 (Día 3 - Release):
-* **Alcance:** Interfaz de usuario final expuesta.
-* **Estrategia TBD / Flag:** Activación del Flag al 100% de los usuarios.
-* **Criterio de Verificación:** Métricas de uso y telemetría estables en producción.
-```
+* **Título formal:** `feat: exponer resta() en el frontend detrás del toggle`
+* **Descripción:** Conectar `script.js` e `index.html` al endpoint/método de resta, visible o funcional únicamente si el flag está activo.
+* **Corte Vertical (Slice para TBD):** Rama efímera (<24h) enfocada exclusivamente en integrar a `main` la estructura básica de UI y su enlace con la lógica de resta sin esperar otras operaciones.
+* **Estrategia de Feature Toggle:** Flag condicional gestionado con ConfigCat (`isSubtractionEnabled`), configurado con un rollout inicial del 10% para pruebas internas en producción.
+* **Criterios de Aceptación (AC) en Producción:**
+  1. UI actualizada con botón/campo de resta en `index.html` conectado a `script.js`.
+  2. Validación condicional con ConfigCat en frontend (oculto si flag está apagado).
+  3. Feature flag configurado al 10% de rollout para pruebas internas seguras.
+  4. CI en verde: pruebas unitarias, linters y build de Docker aprobados antes del merge a `main`.
 
 ---
 
-## 📌 8. Acuerdos Técnicos y Decisiones Pendientes
+## 📌 8. Acuerdos Técnicos y Reglas de Integración a main
 
-| Tema | Estado / Decisión | Responsable | Fecha Límite |
+| Tema | Estado / Decisión Definitiva | Responsable | Fecha Límite / Estado |
 | :--- | :--- | :--- | :--- |
-| **Branch Protection Rules** | Bloquear push directo a `main`, exigir CI verde y 1 aprobación. | Tech Lead / DevOps | Inmediato |
-| **Gestor de Feature Flags** | Evaluar ConfigCat / Unleash / Flags por Variables de Entorno. | Equipo de Desarrollo | Próximo Sprint |
-| **Pipeline CI (GitHub Actions)**| Automatizar lint, pytest, build Docker en cada PR. | DevOps / Developers | En progreso |
-| **Métricas DORA** | Medir *Deployment Frequency* y *Lead Time for Changes*. | Scrum Master | Sprint + 1 |
+| **Branch Protection** | Modificación en GitHub Rulesets: eliminar aprobación exclusiva del Admin y reemplazarla por **Peer Review obligatorio (1 Developer)** + **CI en verde obligatorio** antes del merge a `main`. | Tech Lead / DevOps | Acordado / Inmediato |
+| **Gestor de Feature Flags** | **Adopción definitiva de ConfigCat** con convención estándar de nombres (`isFeatureNameEnabled`) y protocolo estricto de limpieza de flags obsoletos (*cleanup* post-release). | Developers / Tech Lead | Acordado / En uso |
+| **Pipeline CI (GitHub Actions)** | Automatización obligatoria de linters, pruebas unitarias (`pytest`) y build de imagen Docker en cada PR y push a `main`. | DevOps / Developers | Implementado |
+| **Métricas DORA** | Inicio inmediato de medición de **Deployment Frequency** (diario) y **Lead Time for Changes** (< 24 horas). | Scrum Master / Tech Lead | Activo |
 
 ---
 
