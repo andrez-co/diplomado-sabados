@@ -238,3 +238,102 @@ Si un commit en `main` rompe el pipeline de CI:
 1. **Detener nuevos merges:** Nadie integra a `main` hasta que el pipeline esté completamente verde.
 2. **Regla de los 10 minutos:** Si el fix no se identifica y corrige en 10 minutos, se ejecuta **`git revert`** del commit causante de forma inmediata.
 3. **Investigar en local:** El desarrollador replica e investiga el problema en su entorno local con pruebas unitarias antes de volver a someter una PR.
+
+---
+
+## 12. Adaptación a Continuous Deployment y Liberación Segura (Taller 6)
+> **Consolidación de acuerdos de equipo, tableros de Miro y ceremonias orientadas a Despliegue Continuo (CD), Feature Flagging y Observabilidad.**
+
+---
+
+### 🎭 12.1 Nuevo Formato del Sprint Review (Enfoque en Producción y Feature Flags)
+
+Tradicionalmente, la Sprint Review se limitaba a mostrar funcionalidades en entornos locales o de pruebas (*staging*). Bajo nuestro modelo de **Continuous Deployment + Trunk-Based Development**, el formato evoluciona hacia una demostración de valor real en vivo:
+
+1. **Desacople Total de Demo y Despliegue:**
+   * Las demostraciones se ejecutan **exclusivamente en el entorno de producción en vivo ([Render](https://render.com))**.
+   * Se elimina la frase *"en mi máquina funciona"*: el código ya fue integrado a `main`, compilado en Docker y desplegado a producción antes de iniciar la ceremonia.
+
+2. **Protocolo Oficial de Demo con Feature Flags:**
+   * **Paso 1 (Estado Oculto / Dark Launch):** Se proyecta la aplicación en vivo con el toggle `dark_mode_enabled` en **OFF**. Los asistentes comprueban que el botón `#theme-toggle` está totalmente ausente del DOM visual (clase `hidden`), garantizando cero impacto para usuarios no autorizados.
+   * **Paso 2 (Activación en Tiempo Real):** El Product Owner o Tech Lead ingresa al dashboard en vivo de **ConfigCat** y activa el flag para el segmento de prueba o en porcentaje de muestra.
+   * **Paso 3 (Evaluación Reactiva en Vivo):** Sin recargar la página ni ejecutar un nuevo despliegue, el cliente web detecta el cambio vía *AutoPoll*, renderiza el botón de modo oscuro y permite alternar temas fluidamente, evidenciando el desacople de *Deploy vs Release*.
+
+3. **Foco en Valor y Observabilidad (No solo "Código Terminado"):**
+   * La revisión no evalúa únicamente que la UI responda, sino la **observabilidad asociada**: se inspecciona la consola del navegador y los paneles de telemetría para validar los eventos emitidos (`FlagEvaluated`, `ThemeToggled`), verificando que no existan errores de cliente o degradación visual.
+
+---
+
+### 🔄 12.2 Inspección de Flujo y Pipeline en la Sprint Retrospective
+
+La Retrospectiva incorpora el análisis cuantitativo de la infraestructura de entrega continua y la disciplina de ingeniería:
+
+#### 📊 Métricas Obligatorias de CI/CD e Infraestructura
+* **Tasa de Fallos en GitHub Actions:** Porcentaje de builds en rojo en la rama `main`. Meta acordada: **< 5%** de ejecuciones fallidas al mes.
+* **Tiempo Promedio de Ciclo (Build & Deploy):** Tiempo transcurrido desde el push a `main` hasta que la imagen Docker se publica en `ghcr.io` y Render completa el despliegue. Meta acordada: **< 5 minutos**.
+* **Health Check en Render:** Verificación de disponibilidad del servicio estático sirviendo en el puerto 80 sobre Nginx Alpine, con uptime objetivo del **99.9%**.
+
+#### ⚡ Disciplina Trunk-Based Development (TBD)
+* **Política de Ramas Efímeras:** Ninguna rama de trabajo vive más de **24 horas**. Si una funcionalidad es compleja, se corta en rebanadas verticales (*vertical slicing*) y se oculta detrás de un flag de ConfigCat.
+* **Prohibición de ramas `develop`:** Todo commit se integra directamente a `main` mediante Pull Requests pequeñas revisadas en un SLA máximo de 2 horas.
+
+#### 🧹 Gestión de Deuda Técnica y Caducidad de Flags (*Flag Lifecycle Policy*)
+* **Regla de Expiración:** Cualquier Feature Flag que alcance el **100% de rollout y permanezca estable durante 2 sprints consecutivos** es considerado *deuda técnica obligatoria*.
+* **Acción de Limpieza:** En el sprint inmediatamente posterior, se debe planificar y ejecutar la tarea de refactorización para remover el condicional `if (flag)` del código fuente, limpiar las referencias en pruebas unitarias y archivar el flag en ConfigCat.
+
+#### 🎯 Las 3 Acciones de Mejora del Sprint (Compromisos Vivos)
+1. **Monitoreo y Telemetría Client-Side:** Implementar y estandarizar `window.telemetry` con listeners globales (`error` y `unhandledrejection`) y captura de excepciones en eventos de UI.
+2. **Limpieza Sistemática de Flags Caducos:** Automatizar la creación de tickets de limpieza de código en cuanto un flag complete su ciclo de liberación en producción.
+3. **Ajuste del DoD con Pre-Commit de Pytest:** Ejecutar obligatoriamente en local la suite de pruebas unitarias (`pytest -v`) antes de empujar ramas remotas para evitar fallos prevenibles en GitHub Actions.
+
+---
+
+### 🛡️ 12.3 Protocolo Oficial de Rollout Seguro (*Safe Release Matrix*)
+
+Para mitigar riesgos al liberar funcionalidades a producción, el equipo adopta una matriz progresiva de 4 fases de activación:
+
+```mermaid
+flowchart TD
+    F0["Fase 0: Pruebas Internas<br>(Equipo / Staging / Dogfooding - 0%)"] -->|Estable + DoD verde| F1["Fase 1: Canario 10%<br>(Mínimo 72 horas de observación)"]
+    F1 -->|Cero alertas de telemetría| F2["Fase 2: Expansión 50%<br>(5 a 7 días de análisis de uso)"]
+    F2 -->|Estabilidad comprobada| F3["Fase 3: General Availability 100%<br>(2 sprints activo -> Limpieza de flag)"]
+    
+    F1 -.->|Error JS > 0.5% o caída Render| RB["🚨 ROLLBACK INMEDIATO<br>(Toggle a OFF en ConfigCat)"]
+    F2 -.->|Regresión visual crítica| RB
+```
+
+#### Matriz de Fases de Liberación
+
+| Fase | Alcance de Tráfico | Ventana de Observación | Criterio de Éxito para Avanzar |
+| :--- | :--- | :--- | :--- |
+| **Fase 0: Interna** | Solo equipo de desarrollo y QA | 24 - 48 horas | Tests de Pytest en verde, validación de telemetría y aprobación de PO. |
+| **Fase 1: Canario** | **10%** de usuarios reales | **Mínimo 72 horas continuas** | Tasa de error JS inferior al 0.1%, eventos `FlagEvaluated` reportados correctamente. |
+| **Fase 2: Expansión** | **50%** de usuarios reales | **5 a 7 días** | Métricas de rendimiento estables, sin incremento de soporte ni reportes de UI. |
+| **Fase 3: GA (100%)** | **100%** de la base de usuarios | **2 sprints completos** | Comportamiento óptimo continuo. Finalizada la fase, se programa el retiro del flag. |
+
+#### 🚨 Criterios Estrictos de Rollback Inmediato (*Circuit Breakers*)
+Si durante cualquiera de las fases se detecta alguno de los siguientes eventos en producción, se procede al **apagado instantáneo del toggle en ConfigCat (Kill Switch)** en menos de 30 segundos, sin necesidad de revertir código en Git ni generar un nuevo despliegue:
+
+* **Tasa de errores de JavaScript > 0.5%** capturada por `window.telemetry.logError` o consola del cliente.
+* **Fallo del Health Check en Render:** Dos fallos consecutivos de respuesta HTTP 5xx o timeout en el contenedor web.
+* **Regresiones Visuales Críticas:** Inconsistencias de estilos que impidan la interacción con elementos esenciales de navegación o toggles.
+
+---
+
+### ✅ 12.4 Definition of Done (DoD) Definitiva y Actualizada
+
+Una historia de usuario o incremento técnico solo se considera **Terminado (Done)** si satisface íntegramente la siguiente lista de verificación:
+
+* [ ] **Código y Arquitectura:** Implementado en Vanilla JS / HTML5 semántico con estilos Tailwind CSS, desacoplado de dependencias innecesarias.
+* [ ] **Feature Flag Integrado:** Toda nueva funcionalidad o cambio de comportamiento está protegido bajo un flag de **ConfigCat** (`dark_mode_enabled` o convención `isFeatureNameEnabled`).
+* [ ] **Estado Inicial Seguro:** Los elementos visuales condicionales inician ocultos por defecto (`class="hidden"`) y cuentan con atributos identificadores como `data-testid="theme-toggle"`.
+* [ ] **Observabilidad y Telemetría:** El código incluye instrumentación cliente mediante `window.telemetry`:
+  * Emisión de eventos de éxito (`logEvent`) como `FlagEvaluated` y `ThemeToggled`.
+  * Captura de fallos (`logError`) dentro de bloques `try/catch` en la inicialización del SDK y en los listeners de UI.
+  * Presencia del capturador global de errores (`window.addEventListener('error', ...)`).
+* [ ] **Pruebas Automatizadas en Pytest:** Suite [`src/test_interface.py`](src/test_interface.py) ejecutada localmente y pasando al **100% en verde** (validando HTML, CDNs, selectores clave, comportamiento de toggles y telemetría).
+* [ ] **Pipeline CI/CD Aprobado:** Pull Request aprobada con los jobs de `test` y `build_and_publish` finalizados con éxito en GitHub Actions.
+* [ ] **Despliegue Continuo Verificado:** Servicio desplegado automáticamente y respondiendo en el contenedor de Render.
+* [ ] **Plan de Rollout Documentado:** La historia cuenta con su matriz de liberación (Fases 0 a 3) y criterios de rollback definidos en el ticket antes de iniciar el rollout.
+
+

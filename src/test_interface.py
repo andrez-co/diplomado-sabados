@@ -92,10 +92,12 @@ def test_key_selectors_and_elements_present(html_soup):
     toggle_container = soup.find(id="toggle-container")
     assert toggle_container is not None, "El elemento '#toggle-container' debe existir en el DOM."
 
-    # Botón principal para alternar el tema
-    toggle_button = soup.find(id="dark-mode-toggle")
-    assert toggle_button is not None, "El botón '#dark-mode-toggle' debe existir en el DOM."
-    assert toggle_button.name == "button", "El selector #dark-mode-toggle debe corresponder a un elemento <button>."
+    # Botón principal para alternar el tema (soporta id='theme-toggle' de Taller 6 o '#dark-mode-toggle')
+    toggle_button = soup.find(id="theme-toggle") or soup.find(id="dark-mode-toggle")
+    assert toggle_button is not None, "El botón '#theme-toggle' o '#dark-mode-toggle' debe existir en el DOM."
+    assert toggle_button.name == "button", "El selector debe corresponder a un elemento <button>."
+    assert "hidden" in toggle_button.get("class", []), "El botón debe estar oculto inicialmente (hidden)."
+    assert toggle_button.get("data-testid") == "theme-toggle", "El botón debe tener data-testid='theme-toggle'."
 
     # Iconos para el estado visual del botón (Luna y Sol)
     assert soup.find(id="icon-moon") is not None, "Debe existir el elemento '#icon-moon' para modo claro."
@@ -122,4 +124,28 @@ def test_stile_css_linked_and_exists(html_soup):
     assert any("stile.css" in href for href in link_hrefs), (
         "El documento index.html debe incluir un tag <link rel='stylesheet' href='stile.css'>."
     )
+
+
+def test_telemetry_and_safe_rollout_present(html_soup):
+    """Test 6: Validar observabilidad, telemetría y liberación segura (Taller 6)."""
+    soup, content = html_soup
+
+    # 1. Módulo global window.telemetry con logEvent y logError
+    assert "window.telemetry" in content, "El script debe definir el módulo window.telemetry."
+    assert "logEvent" in content, "window.telemetry debe implementar logEvent."
+    assert "logError" in content, "window.telemetry debe implementar logError."
+
+    # 2. Listener global para capturar errores del cliente
+    assert "addEventListener" in content and "error" in content, (
+        "Debe registrarse un listener global para eventos de error (window.addEventListener('error', ...))."
+    )
+
+    # 3. Registro de eventos FlagEvaluated y ThemeToggled
+    assert "FlagEvaluated" in content, "Debe registrarse el evento de telemetría 'FlagEvaluated'."
+    assert "ThemeToggled" in content, "Debe registrarse el evento de telemetría 'ThemeToggled'."
+
+    # 4. Botón con data-testid="theme-toggle"
+    btn = soup.find(attrs={"data-testid": "theme-toggle"})
+    assert btn is not None, "El botón debe incluir el atributo data-testid='theme-toggle'."
+
 
