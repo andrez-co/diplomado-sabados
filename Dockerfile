@@ -1,16 +1,10 @@
-# Usar imagen oficial ligera de Python 3.11
-FROM python:3.11-slim
+FROM nginx:alpine
 
-# Establecer directorio de trabajo dentro del contenedor
-WORKDIR /app
+# Copiar el archivo index.html al directorio web de Nginx
+COPY index.html /usr/share/nginx/html/index.html
 
-# Copiar requerimientos e instalarlos
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Exponer el puerto 80
+EXPOSE 80
 
-# Copiar el código fuente y las pruebas
-COPY src/ ./src/
-COPY tests.py ./
-
-# Comando por defecto al ejecutar el contenedor
-CMD ["pytest", "tests.py"]
+# Ejecutar Nginx en primer plano
+CMD ["nginx", "-g", "daemon off;"]
