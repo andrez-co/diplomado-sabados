@@ -73,7 +73,8 @@
         
         <!-- Botón de Alternar Tema (Oculto por defecto hasta que dark_mode_enabled sea true) -->
         <button
-          id="dark-mode-toggle"
+          id="theme-toggle"
+          data-testid="theme-toggle"
           type="button"
           class="hidden inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl font-semibold text-sm text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-900 cursor-pointer"
           aria-label="Alternar modo oscuro"
@@ -98,12 +99,63 @@
     </main>
   </div>
 
-  <!-- JavaScript Logic -->
+  <!-- Telemetría y Observabilidad (Taller 6: Sprint Retrospective & Safe Rollout) -->
+  <script type="text/javascript">
+    // Módulo global de telemetría liviano
+    window.telemetry = {
+      logEvent(eventName, data = {}) {
+        const payload = {
+          timestamp: new Date().toISOString(),
+          type: "EVENT",
+          name: eventName,
+          ...data
+        };
+        console.log(`[Telemetry Event] ${eventName}:`, payload);
+        return payload;
+      },
+      logError(errorName, error = {}, context = {}) {
+        const payload = {
+          timestamp: new Date().toISOString(),
+          type: "ERROR",
+          name: errorName,
+          message: error?.message || String(error),
+          stack: error?.stack || null,
+          ...context
+        };
+        console.error(`[Telemetry Error] ${errorName}:`, payload);
+        return payload;
+      }
+    };
+
+    // Listener global para capturar errores no controlados de JavaScript en el cliente
+    window.addEventListener("error", (event) => {
+      try {
+        window.telemetry.logError("UnhandledClientError", event.error || { message: event.message }, {
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno
+        });
+      } catch (e) {
+        console.error("[Telemetry FailSafe] Error al registrar UnhandledClientError:", e);
+      }
+    });
+
+    // Captura adicional de promesas rechazadas no manejadas
+    window.addEventListener("unhandledrejection", (event) => {
+      try {
+        window.telemetry.logError("UnhandledPromiseRejection", event.reason || { message: "Unhandled promise rejection" });
+      } catch (e) {
+        console.error("[Telemetry FailSafe] Error al registrar UnhandledPromiseRejection:", e);
+      }
+    });
+  </script>
+
+  <!-- Lógica de Negocio, ConfigCat Feature Flagging e Interacción UI -->
   <script type="text/javascript">
     const SDK_KEY = "configcat-sdk-1/rjDfCNA7ZUuM4iC_A6A2fQ/IdaMKPoRGkm4k4aOlW3P7g";
     const FLAG_NAME = "dark_mode_enabled";
 
-    const toggleBtn = document.getElementById("dark-mode-toggle");
+    const toggleBtn = document.getElementById("theme-toggle") || document.getElementById("dark-mode-toggle");
     const disabledNotice = document.getElementById("disabled-notice");
     const flagStatusText = document.getElementById("flag-status-text");
     const flagStatusBadge = document.getElementById("flag-status-badge");
@@ -125,11 +177,25 @@
       }
     }
 
-    // Alternar la clase 'dark' en el elemento <html> al hacer clic
+    // Alternar tema con bloque try/catch y registro de telemetría ThemeToggled
     if (toggleBtn) {
       toggleBtn.addEventListener("click", () => {
-        document.documentElement.classList.toggle("dark");
-        updateButtonVisuals();
+        try {
+          const isDark = document.documentElement.classList.toggle("dark");
+          updateButtonVisuals();
+          const currentTheme = isDark ? "dark" : "light";
+
+          // Registro seguro del evento
+          window.telemetry.logEvent("ThemeToggled", {
+            theme: currentTheme,
+            timestamp: Date.now()
+          });
+        } catch (uiError) {
+          window.telemetry.logError("ThemeToggleUIError", uiError, {
+            action: "toggleThemeClick"
+          });
+          console.error("Error al alternar el tema visual:", uiError);
+        }
       });
     }
 
@@ -171,10 +237,13 @@
       updateButtonVisuals();
     }
 
-    // Inicializar ConfigCat SDK
+    // Inicializar ConfigCat SDK con observabilidad y manejo seguro de errores
     function initConfigCat() {
       if (typeof configcat === "undefined") {
+        const cdnError = new Error("ConfigCat SDK no se pudo cargar desde el CDN.");
+        window.telemetry.logError("ConfigCatCDNError", cdnError, { sdk: "configcat" });
         console.error("ConfigCat SDK no se pudo cargar desde el CDN.");
+
         if (flagStatusText) flagStatusText.textContent = "Error al cargar ConfigCat SDK";
         if (flagStatusBadge) {
           flagStatusBadge.textContent = "Error CDN";
@@ -192,9 +261,22 @@
             pollIntervalSeconds: 15,
             setupHooks: (hooks) => {
               hooks.on("configChanged", async () => {
-                const value = await client.getValueAsync(FLAG_NAME, false);
-                console.log("ConfigCat configChanged - dark_mode_enabled:", value);
-                applyFeatureToggle(value);
+                try {
+                  const value = await client.getValueAsync(FLAG_NAME, false);
+                  window.telemetry.logEvent("FlagEvaluated", {
+                    flagName: FLAG_NAME,
+                    value: value,
+                    source: "configChanged"
+                  });
+                  console.log("ConfigCat configChanged - dark_mode_enabled:", value);
+                  applyFeatureToggle(value);
+                } catch (pollError) {
+                  window.telemetry.logError("FlagEvaluationError", pollError, {
+                    flagName: FLAG_NAME,
+                    source: "configChanged"
+                  });
+                  console.error("Error al re-evaluar flag en configChanged:", pollError);
+                }
               });
             }
           }
@@ -203,14 +285,24 @@
         // Evaluación inicial
         client.getValueAsync(FLAG_NAME, false)
           .then((value) => {
+            window.telemetry.logEvent("FlagEvaluated", {
+              flagName: FLAG_NAME,
+              value: value,
+              source: "initialEvaluation"
+            });
             console.log("ConfigCat evaluación inicial - dark_mode_enabled:", value);
             applyFeatureToggle(value);
           })
           .catch((error) => {
+            window.telemetry.logError("FlagEvaluationError", error, {
+              flagName: FLAG_NAME,
+              source: "initialEvaluation"
+            });
             console.error("Error al evaluar el flag:", error);
             applyFeatureToggle(false);
           });
       } catch (err) {
+        window.telemetry.logError("ConfigCatInitError", err, { sdkKey: SDK_KEY });
         console.error("Error al inicializar cliente ConfigCat:", err);
         applyFeatureToggle(false);
       }
