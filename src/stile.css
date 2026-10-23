@@ -1,0 +1,49 @@
+/* ========================================================
+   Estilos personalizados - ConfigCat Feature Toggle
+   Archivo: stile.css
+   ======================================================== */
+
+:root {
+  color-scheme: light dark;
+}
+
+/* Transiciones suaves al alternar temas */
+html,
+body,
+main,
+div,
+button,
+span,
+svg,
+p,
+h1,
+code {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Scrollbar estilizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.4);
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(75, 85, 99, 0.5);
+}
+
+/* Efecto accesible al enfocar botones */
+button:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}

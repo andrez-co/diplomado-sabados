@@ -1,7 +1,7 @@
 FROM nginx:alpine
 
-# Copiar el archivo index.html al directorio web de Nginx
-COPY index.html /usr/share/nginx/html/index.html
+# Copiar los archivos estáticos desde src/ al directorio web de Nginx
+COPY src/index.html src/stile.css /usr/share/nginx/html/
 
 # Exponer el puerto 80
 EXPOSE 80

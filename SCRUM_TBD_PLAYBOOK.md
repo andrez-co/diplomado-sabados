@@ -99,22 +99,27 @@ Para que una historia o incremento pueda ingresar al **Sprint Backlog** durante 
 
 ---
 
-## ✅ 7. Definition of Done (DoD) Adaptada
-Para que una historia o incremento se considere **Done**, debe cumplir con:
+## ✅ 7. Definition of Done (DoD) Definitiva (TBD + CD)
+Para que una historia, tarea o incremento se considere **Done** y listo para producción, debe cumplir obligatoriamente con los siguientes tres pilares fundamentales:
 
-### ⚙️ Criterios Técnicos
-- [ ] Código desarrollado en una rama de vida corta (< 24h).
-- [ ] Pruebas unitarias e integración añadidas y pasando en local y en CI (`pytest`).
-- [ ] Linter y análisis estático aprobados sin warnings críticos (`flake8`, etc.).
+### 🎯 Pilares del DoD Definitivo
+1. **Tests automatizados en Pytest pasando en verde en GitHub Actions:** Todo cambio debe superar la suite de integridad (`src/test_interface.py`) en el job secuencial `test` antes de autorizar la construcción de la imagen Docker.
+2. **Despliegue continuo hacia Render activo desde la rama main:** Una vez superado el pipeline y publicada la imagen en GitHub Container Registry (`ghcr.io`), el servicio web en **Render** debe desplegar de manera continua y automática el nuevo contenedor.
+3. **Funcionalidades experimentales protegidas con Feature Flags en ConfigCat:** Cualquier capacidad nueva, en validación o experimental debe estar gobernada por un flag técnico en **ConfigCat** (desacoplando el *Deploy* técnico del *Release* comercial mediante *Dark Launching*).
+
+### ⚙️ Criterios Técnicos de Verificación
+- [ ] Código desarrollado en una rama de vida corta (< 24h) integrado a `main`.
+- [ ] **Tests automatizados en Pytest pasando en verde en GitHub Actions (`pytest -v`).**
+- [ ] Pipeline de CI/CD completado sin errores (bloqueo automático ante fallos de test).
+- [ ] **Despliegue continuo hacia Render activo desde la rama main.**
+- [ ] **Funcionalidades experimentales protegidas con Feature Flags en ConfigCat.**
 - [ ] Code Review aprobado por al menos 1 par (< 2h SLA).
-- [ ] **Merged a `main` exitosamente y pipeline de CI en verde.**
-- [ ] Si la funcionalidad está incompleta o en fase de validación: protegida detrás de un **Feature Flag en ConfigCat**.
 
 ### 💼 Criterios de Negocio y Operación
-- [ ] Criterios de Aceptación validados con el Product Owner en producción o staging representativo.
-- [ ] Feature Flag configurado y testeado en apagado/encendido (*Dark Launching*).
-- [ ] Logs y métricas básicas implementadas para observar el comportamiento.
-- [ ] Documentación técnica o de API actualizada si aplica.
+- [ ] Criterios de Aceptación verificados en vivo en producción (Render) usando toggles.
+- [ ] Feature Flag probado en encendido/apagado en tiempo real sin redeploy.
+- [ ] Métricas de observabilidad y dashboard operativo.
+- [ ] Documentación técnica (`README.md`, Playbook) sincronizada.
 
 ---
 
