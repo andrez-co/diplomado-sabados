@@ -545,9 +545,10 @@
       },
 
       getErrorRate() {
-        const total = this.eventCount + this.errorCount;
-        if (total === 0) return 0;
-        return (this.errorCount / total) * 100;
+        const totalUsers = Math.max(this.loggedUsers.size, this.failingUsers.size > 0 ? this.failingUsers.size : 1);
+        const failingCount = this.failingUsers.size;
+        if (failingCount === 0) return 0;
+        return (failingCount / totalUsers) * 100;
       },
 
       updateMetricsUI() {
@@ -557,12 +558,10 @@
         const detail = document.getElementById("rollback-alert-detail");
         if (!rateEl) return;
 
-        const total = this.eventCount + this.errorCount;
-        const rate = this.getErrorRate();
-        rateEl.textContent = `${rate.toFixed(1)}% (Límite: >0.5%)`;
-
         const affectedCount = this.failingUsers.size;
         const totalUsers = Math.max(this.loggedUsers.size, affectedCount > 0 ? affectedCount : 1);
+        const rate = this.getErrorRate();
+        rateEl.textContent = `${rate.toFixed(1)}% (Límite: >0.5%)`;
 
         const usersLabel = (totalUsers === 1) ? "usuario" : "usuarios";
         const errorLabel = (this.errorCount === 1) ? "fallo" : "fallos";
@@ -589,7 +588,7 @@
           rateEl.className = "text-rose-600 dark:text-rose-400 font-bold";
           if (banner) banner.classList.remove("hidden");
           if (detail) {
-            detail.textContent = `La tasa de error superó el límite: ${rate.toFixed(1)}% (${this.errorCount} ${errorLabel} en ${affectedCount} ${usersLabel}). Apagar toggle en ConfigCat inmediatamente.`;
+            detail.textContent = `La tasa de error superó el límite: ${rate.toFixed(1)}% (${affectedCount} de ${totalUsers} ${usersLabel} afectados). Apagar toggle en ConfigCat inmediatamente.`;
           }
         } else {
           rateEl.className = "text-emerald-600 dark:text-emerald-400 font-bold";
