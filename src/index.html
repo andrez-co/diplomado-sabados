@@ -325,20 +325,39 @@
 
   <!-- Telemetría y Observabilidad (Taller 6: Sprint Retrospective & Safe Rollout) -->
   <script type="text/javascript">
-    // Canal de sincronización en tiempo real entre pestañas/ventanas
+    // Canal de sincronización en tiempo real entre pestañas/ventanas con deduplicación
     const telemetryChannel = (typeof BroadcastChannel !== "undefined") ? new BroadcastChannel("dev_telemetry_sync") : null;
+    const processedTelemetryEvents = new Set();
 
     function broadcastTelemetryEvent(data) {
       try {
+        const eventId = "evt_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+        const payload = {
+          eventId: eventId,
+          ...data
+        };
+        processedTelemetryEvents.add(eventId);
+
         if (telemetryChannel) {
-          telemetryChannel.postMessage(data);
+          telemetryChannel.postMessage(payload);
         }
-        localStorage.setItem("latest_telemetry_sync", JSON.stringify(data));
+        localStorage.setItem("latest_telemetry_sync", JSON.stringify(payload));
       } catch (e) {}
     }
 
     function handleIncomingTelemetry(data) {
       if (!data) return;
+
+      // Evita duplicados cuando BroadcastChannel y storage se disparan simultáneamente
+      if (data.eventId) {
+        if (processedTelemetryEvents.has(data.eventId)) return;
+        processedTelemetryEvents.add(data.eventId);
+        if (processedTelemetryEvents.size > 100) {
+          const first = processedTelemetryEvents.values().next().value;
+          processedTelemetryEvents.delete(first);
+        }
+      }
+
       const liveEmail = document.getElementById("live-feed-email");
       const liveResult = document.getElementById("live-feed-result");
       const liveTime = document.getElementById("live-feed-time");
@@ -364,12 +383,15 @@
 
       if (data.type === "ERROR") {
         const errorUser = data.email || data.user || "Usuario externo";
-        window.telemetry.connectedUsers.add(errorUser);
-        window.telemetry.failingUsers.add(errorUser);
+        // Si este usuario ya tiene registrado un fallo, mantener exactamente 1 fallo por usuario
+        if (window.telemetry.failingUsers.has(errorUser)) {
+          return;
+        }
+
         window.telemetry.logError(
           data.errorName || "CrossSessionError",
           new Error(data.message || "Error desde otra sesión"),
-          { email: errorUser, user: errorUser },
+          { email: errorUser, user: errorUser, isSimulation: true },
           false // Evita bucle infinito de rebroadcast
         );
       }
@@ -416,8 +438,14 @@
       },
 
       logError(errorName, error = {}, context = {}, shouldBroadcast = true) {
-        this.errorCount++;
         const userEmail = context.email || context.user || (currentUser && currentUser.email) || "Usuario anónimo";
+
+        // Si es una simulación y el usuario ya tiene su fallo registrado, no duplicar (1 fallo por usuario)
+        if (userEmail && this.failingUsers.has(userEmail) && context.isSimulation) {
+          return null;
+        }
+
+        this.errorCount++;
         if (userEmail) {
           this.connectedUsers.add(userEmail);
           this.failingUsers.add(userEmail);
@@ -618,6 +646,10 @@
         }
       }
 
+      if (typeof updateUserFailButton === "function") {
+        updateUserFailButton();
+      }
+
       // Evaluar permisos de ConfigCat para este usuario
       evaluateWithUser("loginSuccess");
     }
@@ -636,6 +668,8 @@
       if (loginView) loginView.classList.remove("hidden");
       if (inputEmail) inputEmail.value = "";
       if (userErrorSimulationBox) userErrorSimulationBox.classList.add("hidden");
+      const userFailStatus = document.getElementById("user-fail-status");
+      if (userFailStatus) userFailStatus.classList.add("hidden");
 
       applyFeatureToggle(false);
     }
@@ -777,28 +811,63 @@
       if (btnNewCanaryUser) btnNewCanaryUser.addEventListener("click", () => doLogin("canary2@canary.io"));
 
       // 5. Botón de simular error en cliente (panel Dev)
+      let devSimCount = 1;
       if (btnSimulateError) {
         btnSimulateError.addEventListener("click", () => {
+          const simEmail = `canary_${devSimCount++}@canary.io`;
+          window.telemetry.connectedUsers.add(simEmail);
           window.telemetry.logError("SimulatedClientError", new Error("Error forzado de prueba en cliente para verificar umbral de rollback."), {
-            source: "devPanelSimulation"
+            source: "devPanelSimulation",
+            email: simEmail,
+            isSimulation: true
           });
         });
       }
 
-      // 6. Botón de simular fallo desde sesión de usuario normal
+      // 6. Botón de simular fallo desde sesión de usuario normal (1 fallo por usuario)
       const btnUserSimulateFail = document.getElementById("btn-user-simulate-fail");
       const userFailStatus = document.getElementById("user-fail-status");
+
+      function updateUserFailButton() {
+        if (!btnUserSimulateFail) return;
+        const alreadyFailed = currentUser.email && window.telemetry.failingUsers.has(currentUser.email);
+        if (alreadyFailed) {
+          btnUserSimulateFail.classList.add("opacity-60", "cursor-not-allowed");
+          btnUserSimulateFail.innerHTML = `<span>✓ Fallo ya registrado para tu usuario (1 fallo)</span>`;
+        } else {
+          btnUserSimulateFail.classList.remove("opacity-60", "cursor-not-allowed");
+          btnUserSimulateFail.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Simular fallo en mi sesión (para alertar a Dev)</span>
+          `;
+        }
+      }
+
       if (btnUserSimulateFail) {
         btnUserSimulateFail.addEventListener("click", () => {
+          if (currentUser.email && window.telemetry.failingUsers.has(currentUser.email)) {
+            if (userFailStatus) {
+              userFailStatus.textContent = "✓ Ya reportaste 1 fallo en tu sesión (máximo 1 por usuario).";
+              userFailStatus.className = "text-[11px] text-amber-500 mt-2 font-mono font-medium";
+              userFailStatus.classList.remove("hidden");
+            }
+            return;
+          }
+
           window.telemetry.logError("ClientUserFailSimulated", new Error("Fallo en la aplicación reportado por " + currentUser.email), {
             email: currentUser.email,
-            user: currentUser.identifier
+            user: currentUser.identifier,
+            isSimulation: true
           });
+
+          updateUserFailButton();
+
           if (userFailStatus) {
+            userFailStatus.textContent = "⚠️ 1 fallo registrado y transmitido a la consola Dev.";
+            userFailStatus.className = "text-[11px] text-rose-500 mt-2 font-mono font-medium";
             userFailStatus.classList.remove("hidden");
-            setTimeout(() => {
-              userFailStatus.classList.add("hidden");
-            }, 3500);
           }
         });
       }
