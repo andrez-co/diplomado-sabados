@@ -96,24 +96,130 @@
         </p>
       </div>
 
+      <!-- Panel de Simulación de Liberación Segura (Taller 6: Rollout en 3 Fases y Targeting) -->
+      <section id="rollout-simulator" class="mt-8 pt-6 border-t border-slate-200/80 dark:border-slate-800/80 text-left">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            Liberación Segura (3 Fases)
+          </span>
+          <span id="active-user-badge" class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
+            Fase 1: Interno
+          </span>
+        </div>
+
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+          Simula la evaluación de ConfigCat por audiencia (Targeting) y por porcentaje (Canary Rollout):
+        </p>
+
+        <!-- Botones de Selección de Perfil para la Demo -->
+        <div class="grid grid-cols-3 gap-1.5 sm:gap-2 mb-3">
+          <button
+            type="button"
+            id="btn-role-internal"
+            class="px-2 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition-colors text-center cursor-pointer"
+            title="Fase 1: Equipo interno / Testers (100% ON por regla de targeting)"
+          >
+            🏢 Interno
+          </button>
+          <button
+            type="button"
+            id="btn-role-canary"
+            class="px-2 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-center cursor-pointer"
+            title="Fase 2: Evaluar hash determinista de ConfigCat por porcentaje"
+          >
+            🎲 Canario %
+          </button>
+          <button
+            type="button"
+            id="btn-role-public"
+            class="px-2 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-center cursor-pointer"
+            title="Fase 3: Usuario público regular (Default Value)"
+          >
+            🌐 General
+          </button>
+        </div>
+
+        <!-- Indicador de Datos del Usuario Evaluado por ConfigCat -->
+        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 text-[11px] font-mono space-y-1 text-slate-600 dark:text-slate-300">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">User Identifier:</span>
+            <span id="user-identifier-display" class="font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[170px]">dev_team_internal</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">Email / Audiencia:</span>
+            <span id="user-email-display" class="truncate max-w-[170px]">dev@equipo.com</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">Tasa de Error Client:</span>
+            <span id="telemetry-error-rate" class="text-emerald-600 dark:text-emerald-400 font-bold">0.0% (Umbral Rollback: >0.5%)</span>
+          </div>
+        </div>
+
+        <!-- Banner de Alerta de Rollback Automático (Circuit Breaker) -->
+        <div id="rollback-alert-banner" class="hidden mt-3 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs">
+          <div class="flex items-center gap-2 font-bold">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            🚨 PROTOCOLO DE ROLLBACK ACTIVADO
+          </div>
+          <p class="mt-1 text-[11px] leading-tight">
+            La tasa de error superó el 0.5%. Apagar toggle en ConfigCat inmediatamente (Kill Switch).
+          </p>
+        </div>
+
+        <!-- Acciones Rápidas para la Demo -->
+        <div class="mt-3 flex items-center justify-between text-[11px]">
+          <button
+            type="button"
+            id="btn-new-canary-user"
+            class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium cursor-pointer inline-flex items-center gap-1"
+          >
+            🔄 Nuevo ID aleatorio
+          </button>
+          <button
+            type="button"
+            id="btn-simulate-error"
+            class="text-rose-600 dark:text-rose-400 hover:underline font-medium cursor-pointer inline-flex items-center gap-1"
+            title="Simula un error JS para probar la captura de telemetría y el circuit breaker"
+          >
+            ⚠️ Simular Error JS
+          </button>
+        </div>
+      </section>
+
     </main>
   </div>
 
   <!-- Telemetría y Observabilidad (Taller 6: Sprint Retrospective & Safe Rollout) -->
   <script type="text/javascript">
-    // Módulo global de telemetría liviano
+    // Módulo global de telemetría con tracking de tasa de error
     window.telemetry = {
+      eventCount: 0,
+      errorCount: 0,
+      events: [],
+      errors: [],
+
       logEvent(eventName, data = {}) {
+        this.eventCount++;
         const payload = {
           timestamp: new Date().toISOString(),
           type: "EVENT",
           name: eventName,
           ...data
         };
+        this.events.push(payload);
+        if (this.events.length > 50) this.events.shift();
         console.log(`[Telemetry Event] ${eventName}:`, payload);
+        this.updateMetricsUI();
         return payload;
       },
+
       logError(errorName, error = {}, context = {}) {
+        this.errorCount++;
         const payload = {
           timestamp: new Date().toISOString(),
           type: "ERROR",
@@ -122,8 +228,34 @@
           stack: error?.stack || null,
           ...context
         };
+        this.errors.push(payload);
+        if (this.errors.length > 50) this.errors.shift();
         console.error(`[Telemetry Error] ${errorName}:`, payload);
+        this.updateMetricsUI();
         return payload;
+      },
+
+      getErrorRate() {
+        const total = this.eventCount + this.errorCount;
+        if (total === 0) return 0;
+        return (this.errorCount / total) * 100;
+      },
+
+      updateMetricsUI() {
+        const rateEl = document.getElementById("telemetry-error-rate");
+        const banner = document.getElementById("rollback-alert-banner");
+        if (!rateEl) return;
+
+        const rate = this.getErrorRate();
+        rateEl.textContent = `${rate.toFixed(1)}% (Umbral Rollback: >0.5%)`;
+
+        if (rate > 0.5) {
+          rateEl.className = "text-rose-600 dark:text-rose-400 font-bold";
+          if (banner) banner.classList.remove("hidden");
+        } else {
+          rateEl.className = "text-emerald-600 dark:text-emerald-400 font-bold";
+          if (banner) banner.classList.add("hidden");
+        }
       }
     };
 
@@ -150,11 +282,12 @@
     });
   </script>
 
-  <!-- Lógica de Negocio, ConfigCat Feature Flagging e Interacción UI -->
+  <!-- Lógica de Negocio, ConfigCat Feature Flagging, User Targeting e Interacción UI -->
   <script type="text/javascript">
     const SDK_KEY = "configcat-sdk-1/rjDfCNA7ZUuM4iC_A6A2fQ/IdaMKPoRGkm4k4aOlW3P7g";
     const FLAG_NAME = "dark_mode_enabled";
 
+    // Elementos DOM principales
     const toggleBtn = document.getElementById("theme-toggle") || document.getElementById("dark-mode-toggle");
     const disabledNotice = document.getElementById("disabled-notice");
     const flagStatusText = document.getElementById("flag-status-text");
@@ -162,6 +295,74 @@
     const iconMoon = document.getElementById("icon-moon");
     const iconSun = document.getElementById("icon-sun");
     const buttonLabel = document.getElementById("button-label");
+
+    // Elementos DOM del simulador de targeting y porcentaje (Taller 6)
+    const activeUserBadge = document.getElementById("active-user-badge");
+    const userIdentifierDisplay = document.getElementById("user-identifier-display");
+    const userEmailDisplay = document.getElementById("user-email-display");
+    const btnRoleInternal = document.getElementById("btn-role-internal");
+    const btnRoleCanary = document.getElementById("btn-role-canary");
+    const btnRolePublic = document.getElementById("btn-role-public");
+    const btnNewCanaryUser = document.getElementById("btn-new-canary-user");
+    const btnSimulateError = document.getElementById("btn-simulate-error");
+
+    let configCatClient = null;
+
+    // Perfiles predefinidos para la simulación en 3 fases del Taller 6
+    const USER_PROFILES = {
+      internal: {
+        identifier: "dev_team_internal",
+        email: "dev@equipo.com",
+        custom: { role: "internal" },
+        label: "Fase 1: Interno",
+        badgeClass: "px-2 py-0.5 text-[11px] font-semibold rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
+      },
+      canary: {
+        identifier: "canary_user_" + Math.random().toString(36).substring(2, 7),
+        email: "beta_tester@canary.io",
+        custom: { role: "canary" },
+        label: "Fase 2: Canario %",
+        badgeClass: "px-2 py-0.5 text-[11px] font-semibold rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300"
+      },
+      public: {
+        identifier: "public_anonymous_user",
+        email: "guest@publico.com",
+        custom: { role: "public" },
+        label: "Fase 3: General",
+        badgeClass: "px-2 py-0.5 text-[11px] font-semibold rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+      }
+    };
+
+    // Estado del usuario activo
+    let activeProfileKey = "internal";
+    let currentUser = { ...USER_PROFILES.internal };
+
+    // Función para actualizar la interfaz del simulador
+    function updateSimulatorUI() {
+      if (userIdentifierDisplay) userIdentifierDisplay.textContent = currentUser.identifier;
+      if (userEmailDisplay) userEmailDisplay.textContent = currentUser.email;
+      if (activeUserBadge) {
+        const profile = USER_PROFILES[activeProfileKey] || USER_PROFILES.internal;
+        activeUserBadge.textContent = profile.label;
+        activeUserBadge.className = profile.badgeClass;
+      }
+
+      // Estilo activo para botones
+      const buttons = [
+        { key: "internal", el: btnRoleInternal },
+        { key: "canary", el: btnRoleCanary },
+        { key: "public", el: btnRolePublic }
+      ];
+
+      buttons.forEach(({ key, el }) => {
+        if (!el) return;
+        if (key === activeProfileKey) {
+          el.className = "px-2 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white shadow-sm transition-colors text-center cursor-pointer";
+        } else {
+          el.className = "px-2 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-center cursor-pointer";
+        }
+      });
+    }
 
     // Función para actualizar los elementos visuales del botón según la clase 'dark' en <html>
     function updateButtonVisuals() {
@@ -188,6 +389,7 @@
           // Registro seguro del evento
           window.telemetry.logEvent("ThemeToggled", {
             theme: currentTheme,
+            user: currentUser.identifier,
             timestamp: Date.now()
           });
         } catch (uiError) {
@@ -212,7 +414,7 @@
         }
 
         // Actualizar badges
-        if (flagStatusText) flagStatusText.textContent = "dark_mode_enabled = true (Habilitado)";
+        if (flagStatusText) flagStatusText.textContent = `dark_mode_enabled = true (ON para ${currentUser.identifier})`;
         if (flagStatusBadge) {
           flagStatusBadge.textContent = "Activo";
           flagStatusBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300";
@@ -228,7 +430,7 @@
         }
 
         // Actualizar badges
-        if (flagStatusText) flagStatusText.textContent = "dark_mode_enabled = false (Deshabilitado)";
+        if (flagStatusText) flagStatusText.textContent = `dark_mode_enabled = false (OFF para ${currentUser.identifier})`;
         if (flagStatusBadge) {
           flagStatusBadge.textContent = "Inactivo";
           flagStatusBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300";
@@ -237,8 +439,91 @@
       updateButtonVisuals();
     }
 
-    // Inicializar ConfigCat SDK con observabilidad y manejo seguro de errores
+    // Evaluar el Feature Flag pasando el User Object a ConfigCat
+    async function evaluateWithUser(source = "manual") {
+      if (!configCatClient) return;
+
+      try {
+        // Pasamos el currentUser para que ConfigCat evalúe Targeting Rules y Percentage Rollout
+        const value = await configCatClient.getValueAsync(FLAG_NAME, false, currentUser);
+
+        window.telemetry.logEvent("FlagEvaluated", {
+          flagName: FLAG_NAME,
+          value: value,
+          source: source,
+          user: currentUser.identifier,
+          role: currentUser.custom?.role
+        });
+
+        console.log(`ConfigCat (${source}) - dark_mode_enabled:`, value, "para usuario:", currentUser);
+        applyFeatureToggle(value);
+      } catch (evalError) {
+        window.telemetry.logError("FlagEvaluationError", evalError, {
+          flagName: FLAG_NAME,
+          source: source,
+          user: currentUser.identifier
+        });
+        console.error("Error al evaluar el flag con usuario:", evalError);
+        applyFeatureToggle(false);
+      }
+    }
+
+    // Configurar listeners de la simulación de liberación segura
+    function setupSimulatorEvents() {
+      if (btnRoleInternal) {
+        btnRoleInternal.addEventListener("click", () => {
+          activeProfileKey = "internal";
+          currentUser = { ...USER_PROFILES.internal };
+          updateSimulatorUI();
+          evaluateWithUser("roleChangeInternal");
+        });
+      }
+
+      if (btnRoleCanary) {
+        btnRoleCanary.addEventListener("click", () => {
+          activeProfileKey = "canary";
+          currentUser = { ...USER_PROFILES.canary };
+          updateSimulatorUI();
+          evaluateWithUser("roleChangeCanary");
+        });
+      }
+
+      if (btnRolePublic) {
+        btnRolePublic.addEventListener("click", () => {
+          activeProfileKey = "public";
+          currentUser = { ...USER_PROFILES.public };
+          updateSimulatorUI();
+          evaluateWithUser("roleChangePublic");
+        });
+      }
+
+      if (btnNewCanaryUser) {
+        btnNewCanaryUser.addEventListener("click", () => {
+          activeProfileKey = "canary";
+          const newId = "canary_user_" + Math.random().toString(36).substring(2, 7);
+          USER_PROFILES.canary.identifier = newId;
+          USER_PROFILES.canary.email = `${newId}@canary.io`;
+          currentUser = { ...USER_PROFILES.canary };
+          updateSimulatorUI();
+          evaluateWithUser("newRandomCanaryUser");
+        });
+      }
+
+      if (btnSimulateError) {
+        btnSimulateError.addEventListener("click", () => {
+          window.telemetry.logError("SimulatedRollbackTestError", new Error("Error forzado de prueba para validar telemetría y regla de rollback."), {
+            source: "uiSimulationButton"
+          });
+        });
+      }
+
+      updateSimulatorUI();
+    }
+
+    // Inicializar ConfigCat SDK con observabilidad, targeting y manejo seguro de errores
     function initConfigCat() {
+      setupSimulatorEvents();
+
       if (typeof configcat === "undefined") {
         const cdnError = new Error("ConfigCat SDK no se pudo cargar desde el CDN.");
         window.telemetry.logError("ConfigCatCDNError", cdnError, { sdk: "configcat" });
@@ -254,53 +539,22 @@
       }
 
       try {
-        const client = configcat.getClient(
+        configCatClient = configcat.getClient(
           SDK_KEY,
           configcat.PollingMode.AutoPoll,
           {
             pollIntervalSeconds: 15,
             setupHooks: (hooks) => {
               hooks.on("configChanged", async () => {
-                try {
-                  const value = await client.getValueAsync(FLAG_NAME, false);
-                  window.telemetry.logEvent("FlagEvaluated", {
-                    flagName: FLAG_NAME,
-                    value: value,
-                    source: "configChanged"
-                  });
-                  console.log("ConfigCat configChanged - dark_mode_enabled:", value);
-                  applyFeatureToggle(value);
-                } catch (pollError) {
-                  window.telemetry.logError("FlagEvaluationError", pollError, {
-                    flagName: FLAG_NAME,
-                    source: "configChanged"
-                  });
-                  console.error("Error al re-evaluar flag en configChanged:", pollError);
-                }
+                evaluateWithUser("configChanged");
               });
             }
           }
         );
 
-        // Evaluación inicial
-        client.getValueAsync(FLAG_NAME, false)
-          .then((value) => {
-            window.telemetry.logEvent("FlagEvaluated", {
-              flagName: FLAG_NAME,
-              value: value,
-              source: "initialEvaluation"
-            });
-            console.log("ConfigCat evaluación inicial - dark_mode_enabled:", value);
-            applyFeatureToggle(value);
-          })
-          .catch((error) => {
-            window.telemetry.logError("FlagEvaluationError", error, {
-              flagName: FLAG_NAME,
-              source: "initialEvaluation"
-            });
-            console.error("Error al evaluar el flag:", error);
-            applyFeatureToggle(false);
-          });
+        // Evaluación inicial con el usuario activo
+        evaluateWithUser("initialEvaluation");
+
       } catch (err) {
         window.telemetry.logError("ConfigCatInitError", err, { sdkKey: SDK_KEY });
         console.error("Error al inicializar cliente ConfigCat:", err);

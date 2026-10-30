@@ -336,4 +336,89 @@ Una historia de usuario o incremento técnico solo se considera **Terminado (Don
 * [ ] **Despliegue Continuo Verificado:** Servicio desplegado automáticamente y respondiendo en el contenedor de Render.
 * [ ] **Plan de Rollout Documentado:** La historia cuenta con su matriz de liberación (Fases 0 a 3) y criterios de rollback definidos en el ticket antes de iniciar el rollout.
 
+---
 
+### 🎛️ 12.5 Estrategia de Liberación en 3 Fases en ConfigCat (Targeting y Porcentaje)
+
+Para responder a la pregunta central del Taller 6: *"¿A quién se la activamos primero? (interno → % de usuarios → todos)"*, el equipo formaliza la **estrategia de liberación segura dividida en 3 partes/fases**:
+
+```mermaid
+flowchart LR
+    P1["1. Fase Interna<br>(Targeting Rule)<br>100% ON solo para equipo"] --> P2["2. Fase Canario %<br>(Percentage Options)<br>5% a 20% usuarios reales"]
+    P2 --> P3["3. Fase Global (GA)<br>(Default Value)<br>100% ON para todos"]
+    P2 -.->|Tasa de error > 0.5%| RB["🚨 Kill Switch Inmediato<br>(Toggle a OFF en < 30s)"]
+```
+
+#### 🛠️ Guía Paso a Paso de Configuración en el Dashboard de ConfigCat
+
+| Fase / Parte | Tipo de Regla en ConfigCat | Configuración Exacta en el Dashboard | Audiencia y Comportamiento |
+| :--- | :--- | :--- | :--- |
+| **Parte 1: Interno** | **Targeting Rule** | 1. Clic en *"Add Targeting Rule"*.<br>2. Atributo: `Email` o `Identifier`.<br>3. Comparador: `CONTAINS` o `IS ONE OF`.<br>4. Valor: `dev@equipo.com` o `internal`.<br>5. Servir: **ON (True)**. | Solo desarrolladores y testers internos ven la funcionalidad activa en producción. El resto ve OFF. |
+| **Parte 2: Porcentaje** | **Percentage Options** | 1. En la regla por defecto o secundaria, activar *"Percentage Options"*.<br>2. Primer escalón: **5% ON / 95% OFF**.<br>3. Segundo escalón (tras 48h estables): **20% ON / 80% OFF**.<br>4. Guardar y publicar (*Save & Publish*). | ConfigCat aplica un algoritmo hash determinista sobre el `identifier` del usuario para asignarlo consistentemente al cubo de porcentaje. |
+| **Parte 3: Todos (GA)** | **Default Value (100%)** | 1. Cambiar el valor por defecto a **ON (True)** para el 100% del tráfico.<br>2. Se deshabilitan las reglas intermedias de porcentaje.<br>3. Se agenda el ticket de limpieza de deuda técnica (*Toggle Cleanup*). | Lanzamiento comercial total (General Availability) respaldado por telemetría limpia y sin errores. |
+
+> [!IMPORTANT]
+> **Requisito Técnico Mandatorio del SDK:**  
+> Para que ConfigCat pueda evaluar las **Targeting Rules** y la **distribución porcentual (Percentage Options)**, el código del cliente debe pasar obligatoriamente el objeto de usuario:
+> ```javascript
+> const userObject = {
+>   identifier: "usuario_unico_123", // Requerido para el cálculo del hash del %
+>   email: "dev@equipo.com",          // Usado para reglas de targeting
+>   custom: { role: "internal" }
+> };
+> const isEnabled = await client.getValueAsync("dark_mode_enabled", false, userObject);
+> ```
+> *Si no se envía el `userObject`, ConfigCat ignora el porcentaje y recurre al valor por defecto.*
+
+---
+
+### 💼 12.6 Resolución Oficial del Caso de Estudio: "Pagos Express con un solo clic"
+
+#### 📌 Contexto y Dilema del Caso
+* **Situación:** La funcionalidad *"Pagos Express"* lleva 9 días en `main`, protegida por el toggle `pagos-express-v1` en **OFF**. Cumple el DoD técnico y pasó CI.
+* **Presión comercial:** El Product Owner y Negocio quieren activar el toggle al **20% este viernes** porque la campaña de marketing ya fue lanzada.
+* **Riesgos y deuda técnica detectados:**
+  1. Caída reciente del health check en Render durante 11 minutos (rollback manual).
+  2. 3 toggles viejos (> 45 días) sin limpiar acumulando deuda técnica.
+  3. Sprint con solo 4 integraciones a `main` (pérdida de cadencia TBD).
+  4. Rama viva 4 días por un test flaky en CI.
+  5. Cero métricas de observabilidad en errores o conversión de pagos.
+
+#### ⚖️ Acuerdos Maduros del Equipo (Solución Oficial)
+
+1. **Sprint Review Adaptado (Transparencia con Negocio):**
+   * Se realiza la demo con el toggle en **OFF** primero (reflejando el estado real en producción).
+   * Se activa temporalmente en vivo **únicamente para un usuario de prueba interno** para mostrar el flujo.
+   * El PO comunica con transparencia técnica y de negocio:  
+     > *"La funcionalidad está técnicamente integrada y desplegada, pero aún no se libera a usuarios reales porque debemos garantizar métricas de observabilidad y estabilidad del pipeline. La campaña de marketing se pausará o reprogramará."*
+   * **Se prohíbe comprometer fechas de activación comercial no respaldadas por estabilidad técnica.**
+
+2. **Sprint Retrospective (Compromisos Concretos del Equipo):**
+   * **Acción 1 (SLA 24h):** Reparar y estabilizar el test flaky de inmediato (prioridad P0 para desbloquear TBD).
+   * **Acción 2 (SLA 3 días):** Implementar el dashboard mínimo de métricas de telemetría (tasa de errores y conversión).
+   * **Acción 3 (Este Sprint):** Ejecutar PRs de limpieza (*Toggle Cleanup*) retirando los 3 flags obsoletos de más de 45 días.
+   * **Acuerdo de Seguridad:** No se activará ningún toggle nuevo a usuarios reales hasta que el pipeline registre **al menos 7 despliegues consecutivos sin fallos de health check**.
+
+3. **Estrategia de Liberación Segura Aprobada:**
+   * **Viernes:** NO se activa al 20%.
+   * **Paso 1:** Resolver test flaky + limpiar toggles viejos + montar dashboard de errores.
+   * **Paso 2:** Activar Fase 1 solo para usuarios internos / dogfooding (1 a 2 días de observación).
+   * **Paso 3:** Si la tasa de error es menor al 0.1%, avanzar a Fase 2 Canario (5% $\rightarrow$ 20% con observación de 48 horas en cada escalón).
+   * **Circuit Breaker:** Rollback automático instantáneo (Toggle a OFF en ConfigCat) ante cualquier incremento **> 0.5% en errores de pago**.
+
+> [!TIP]
+> **Lección de Madurez Técnica:**  
+> Se protege la confianza del pipeline, la observabilidad y la disciplina TBD por encima de la presión comercial inmediata.
+
+---
+
+### 🏁 12.7 Checklist de Cierre y Ronda Final del Taller 6
+
+* [x] **Sprint Review adaptado:** Demos en vivo sobre producción (Render) usando toggles en tiempo real sin recargar página.
+* [x] **Sprint Retrospective adaptada:** Métricas de pipeline, salud de ramas efímeras (<24h), Lead Time y máximo 3 acciones asignadas.
+* [x] **Práctica de Liberación Segura:** Simulación completa del embudo de 3 partes (Interno $\rightarrow$ Canario % $\rightarrow$ 100% Todos).
+* [x] **Observabilidad Integrada:** Telemetría de cliente (`window.telemetry`), captura global de errores y umbral de rollback automático (> 0.5%).
+* [x] **Playbook Consolidado:** Acuerdos, matrices de riesgo y protocolos de limpieza de flags formalizados.
+
+> **Ronda Final del Equipo:**  
+> *"En Continuous Deployment, desplegar a producción deja de ser un evento riesgoso y se convierte en una rutina técnica invisible; la verdadera liberación de valor ocurre en ConfigCat de forma progresiva, medible y 100% reversible."*

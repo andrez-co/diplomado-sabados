@@ -149,3 +149,26 @@ def test_telemetry_and_safe_rollout_present(html_soup):
     assert btn is not None, "El botón debe incluir el atributo data-testid='theme-toggle'."
 
 
+def test_rollout_in_3_phases_and_targeting_present(html_soup):
+    """Test 7: Validar la liberación segura en 3 fases y targeting de ConfigCat (Taller 6)."""
+    soup, content = html_soup
+
+    # 1. Contenedor del simulador de 3 fases
+    simulator = soup.find(id="rollout-simulator")
+    assert simulator is not None, "Debe existir el elemento '#rollout-simulator' para probar las 3 fases."
+
+    # 2. Botones de perfiles (Interno, Canario %, General)
+    assert soup.find(id="btn-role-internal") is not None, "Debe existir el botón '#btn-role-internal' (Fase 1)."
+    assert soup.find(id="btn-role-canary") is not None, "Debe existir el botón '#btn-role-canary' (Fase 2)."
+    assert soup.find(id="btn-role-public") is not None, "Debe existir el botón '#btn-role-public' (Fase 3)."
+    assert soup.find(id="btn-new-canary-user") is not None, "Debe existir '#btn-new-canary-user' para probar hashes."
+
+    # 3. Banner de alerta de Rollback Automático (Circuit Breaker)
+    assert soup.find(id="rollback-alert-banner") is not None, "Debe existir '#rollback-alert-banner' para circuit breaker."
+
+    # 4. Verificación de lógica de usuario y targeting en ConfigCat SDK
+    assert "currentUser" in content, "El script debe mantener el estado del usuario activo (currentUser)."
+    assert "evaluateWithUser" in content, "El script debe implementar evaluateWithUser para evaluar con User Object."
+    assert "getValueAsync(FLAG_NAME, false, currentUser)" in content or "getValueAsync" in content, (
+        "ConfigCat debe evaluar el flag pasando el objeto de usuario."
+    )
