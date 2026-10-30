@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ConfigCat Feature Toggle - Dark Mode</title>
+  <title>ConfigCat Feature Toggle - Login & Dark Mode</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -34,57 +34,124 @@
 </head>
 <body class="h-full min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-500 flex flex-col items-center justify-center p-4 sm:p-6 antialiased selection:bg-indigo-500 selection:text-white">
 
-  <!-- Ambient Glow Effects (Sutiles y limpios) -->
+  <!-- Ambient Glow Effects -->
   <div class="relative w-full max-w-md">
     <div class="absolute -top-12 -left-12 w-48 h-48 bg-indigo-500/15 dark:bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
     <div class="absolute -bottom-12 -right-12 w-48 h-48 bg-purple-500/15 dark:bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
     <!-- Tarjeta Principal Centrada -->
-    <main class="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-xl dark:shadow-2xl border border-slate-200/80 dark:border-slate-800/80 p-8 sm:p-10 text-center transition-all duration-300">
+    <main class="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-xl dark:shadow-2xl border border-slate-200/80 dark:border-slate-800/80 p-6 sm:p-8 text-center transition-all duration-300">
       
       <!-- Icono Principal -->
-      <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
       </div>
 
       <!-- Título y Descripción -->
-      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
         ConfigCat Feature Toggle
       </h1>
-      <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
-        Evaluación reactiva del flag booleano <code class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-mono text-indigo-600 dark:text-indigo-400 font-semibold text-xs">dark_mode_enabled</code>.
+      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        Ingresa tu correo para evaluar las reglas de <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-indigo-600 dark:text-indigo-400 font-semibold text-[11px]">dark_mode_enabled</code>.
       </p>
 
-      <!-- Estado en Vivo del Feature Flag -->
-      <div class="mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between text-left transition-colors duration-300">
-        <div>
-          <p class="text-[11px] font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Estado del Flag</p>
-          <p id="flag-status-text" class="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 mt-0.5">Consultando ConfigCat...</p>
+      <!-- ========================================== -->
+      <!-- 1. LOGIN POR CORREO ELECTRÓNICO            -->
+      <!-- ========================================== -->
+      <div id="login-container" class="mt-5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 text-left transition-all">
+        
+        <!-- Vista Formulario de Ingreso -->
+        <div id="login-form-view">
+          <label for="input-email" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            Iniciar Sesión por Correo
+          </label>
+          <div class="flex gap-2">
+            <input
+              id="input-email"
+              type="email"
+              placeholder="ej: dev@equipo.com"
+              value="dev@equipo.com"
+              class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-mono"
+            />
+            <button
+              id="btn-login-submit"
+              type="button"
+              class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-md shadow-indigo-500/25 transition-all cursor-pointer whitespace-nowrap"
+            >
+              Ingresar
+            </button>
+          </div>
+
+          <!-- Sugerencias Rápidas de Correo -->
+          <div class="mt-2.5 pt-2 border-t border-slate-200/70 dark:border-slate-700/70 flex flex-wrap items-center gap-1.5 text-[11px]">
+            <span class="text-slate-400">Sugerencias:</span>
+            <button type="button" id="btn-quick-dev" class="px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 font-medium cursor-pointer">
+              🏢 dev@equipo.com (IF)
+            </button>
+            <button type="button" id="btn-quick-canary" class="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 font-medium cursor-pointer">
+              🎲 Aleatorio (20%)
+            </button>
+          </div>
         </div>
-        <span id="flag-status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+
+        <!-- Vista Sesión Activa -->
+        <div id="login-active-view" class="hidden flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="h-8 w-8 rounded-full bg-indigo-600/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
+              👤
+            </div>
+            <div>
+              <p class="text-[10px] text-slate-400 uppercase font-semibold">Sesión Activa</p>
+              <p id="active-user-email" class="text-xs font-semibold text-slate-800 dark:text-slate-100 font-mono truncate max-w-[190px]">
+                dev@equipo.com
+              </p>
+            </div>
+          </div>
+          <button
+            id="btn-logout"
+            type="button"
+            class="px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-medium transition-colors cursor-pointer"
+          >
+            Cerrar sesión
+          </button>
+        </div>
+
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 2. EVALUACIÓN Y RESPUESTA DE CONFIGCAT     -->
+      <!-- ========================================== -->
+      <div class="mt-4 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between text-left transition-colors duration-300">
+        <div>
+          <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Evaluación ConfigCat</p>
+          <p id="flag-status-text" class="text-xs font-medium text-slate-700 dark:text-slate-200 mt-0.5">Consultando ConfigCat...</p>
+        </div>
+        <span id="flag-status-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
           Cargando
         </span>
       </div>
 
-      <!-- Contenedor Centrado del Botón de Modo Oscuro -->
-      <div id="toggle-container" class="mt-8 flex flex-col items-center justify-center min-h-[56px]">
+      <!-- ========================================== -->
+      <!-- 3. FUNCIONALIDAD CONDICIONAL (MODO OSCURO) -->
+      <!-- ========================================== -->
+      <div id="toggle-container" class="mt-5 flex flex-col items-center justify-center min-h-[52px]">
         
         <!-- Botón de Alternar Tema (Oculto por defecto hasta que dark_mode_enabled sea true) -->
         <button
           id="theme-toggle"
           data-testid="theme-toggle"
           type="button"
-          class="hidden inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl font-semibold text-sm text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-900 cursor-pointer"
+          class="hidden inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-semibold text-xs sm:text-sm text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-900 cursor-pointer"
           aria-label="Alternar modo oscuro"
         >
-          <!-- Moon Icon (modo claro) -->
-          <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <!-- Moon Icon -->
+          <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
           </svg>
-          <!-- Sun Icon (modo oscuro) -->
-          <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <!-- Sun Icon -->
+          <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 9H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
           <span id="button-label">Cambiar a Modo Oscuro</span>
@@ -92,64 +159,62 @@
 
         <!-- Mensaje discreto si el toggle está deshabilitado por el Feature Flag -->
         <p id="disabled-notice" class="hidden text-xs text-slate-500 dark:text-slate-400 italic">
-          El botón de alternar tema se encuentra deshabilitado por Feature Toggle.
+          🔒 El modo oscuro no está habilitado para esta cuenta en ConfigCat.
         </p>
       </div>
 
-      <!-- Panel de Simulación de Liberación Segura (Taller 6: Rollout en 3 Fases y Targeting) -->
-      <section id="rollout-simulator" class="mt-8 pt-6 border-t border-slate-200/80 dark:border-slate-800/80 text-left">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <!-- ========================================== -->
+      <!-- 4. PANEL DE SIMULACIÓN Y TELEMETRÍA TALLER -->
+      <!-- ========================================== -->
+      <section id="rollout-simulator" class="mt-5 pt-4 border-t border-slate-200/80 dark:border-slate-800/80 text-left">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
             Liberación Segura (3 Fases)
           </span>
-          <span id="active-user-badge" class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
+          <span id="active-user-badge" class="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
             Fase 1: Interno
           </span>
         </div>
 
-        <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
-          Simula la evaluación de ConfigCat por audiencia (Targeting) y por porcentaje (Canary Rollout):
-        </p>
-
-        <!-- Botones de Selección de Perfil para la Demo -->
-        <div class="grid grid-cols-3 gap-1.5 sm:gap-2 mb-3">
+        <!-- Botones de Semillas Requeridos por Pytest y Demo -->
+        <div class="grid grid-cols-3 gap-1.5 mb-2">
           <button
             type="button"
             id="btn-role-internal"
-            class="px-2 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition-colors text-center cursor-pointer"
-            title="Fase 1: Equipo interno / Testers (100% ON por regla de targeting)"
+            class="px-2 py-1 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm transition-colors text-center cursor-pointer"
+            title="Iniciar sesión como dev@equipo.com (Fase 1: IF)"
           >
             🏢 Interno
           </button>
           <button
             type="button"
             id="btn-role-canary"
-            class="px-2 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-center cursor-pointer"
-            title="Fase 2: Evaluar hash determinista de ConfigCat por porcentaje"
+            class="px-2 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-center cursor-pointer"
+            title="Iniciar sesión con correo aleatorio para evaluar 20%"
           >
             🎲 Canario %
           </button>
           <button
             type="button"
             id="btn-role-public"
-            class="px-2 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-center cursor-pointer"
-            title="Fase 3: Usuario público regular (Default Value)"
+            class="px-2 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-center cursor-pointer"
+            title="Iniciar sesión como invitado general"
           >
             🌐 General
           </button>
         </div>
 
-        <!-- Indicador de Datos del Usuario Evaluado por ConfigCat -->
-        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 text-[11px] font-mono space-y-1 text-slate-600 dark:text-slate-300">
+        <!-- Detalle de Telemetría Client-Side -->
+        <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 text-[10px] font-mono space-y-1 text-slate-600 dark:text-slate-300">
           <div class="flex justify-between items-center">
             <span class="text-slate-400">User Identifier:</span>
             <span id="user-identifier-display" class="font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[170px]">dev_team_internal</span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-slate-400">Email / Audiencia:</span>
+            <span class="text-slate-400">Email Evaluado:</span>
             <span id="user-email-display" class="truncate max-w-[170px]">dev@equipo.com</span>
           </div>
           <div class="flex justify-between items-center">
@@ -159,32 +224,31 @@
         </div>
 
         <!-- Banner de Alerta de Rollback Automático (Circuit Breaker) -->
-        <div id="rollback-alert-banner" class="hidden mt-3 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs">
-          <div class="flex items-center gap-2 font-bold">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div id="rollback-alert-banner" class="hidden mt-2 p-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs">
+          <div class="flex items-center gap-1.5 font-bold">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             🚨 PROTOCOLO DE ROLLBACK ACTIVADO
           </div>
-          <p class="mt-1 text-[11px] leading-tight">
+          <p class="mt-0.5 text-[10px] leading-tight">
             La tasa de error superó el 0.5%. Apagar toggle en ConfigCat inmediatamente (Kill Switch).
           </p>
         </div>
 
-        <!-- Acciones Rápidas para la Demo -->
-        <div class="mt-3 flex items-center justify-between text-[11px]">
+        <!-- Acciones Rápidas -->
+        <div class="mt-2 flex items-center justify-between text-[11px]">
           <button
             type="button"
             id="btn-new-canary-user"
             class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium cursor-pointer inline-flex items-center gap-1"
           >
-            🔄 Nuevo ID aleatorio
+            🔄 Nuevo correo aleatorio
           </button>
           <button
             type="button"
             id="btn-simulate-error"
             class="text-rose-600 dark:text-rose-400 hover:underline font-medium cursor-pointer inline-flex items-center gap-1"
-            title="Simula un error JS para probar la captura de telemetría y el circuit breaker"
           >
             ⚠️ Simular Error JS
           </button>
@@ -196,7 +260,6 @@
 
   <!-- Telemetría y Observabilidad (Taller 6: Sprint Retrospective & Safe Rollout) -->
   <script type="text/javascript">
-    // Módulo global de telemetría con tracking de tasa de error
     window.telemetry = {
       eventCount: 0,
       errorCount: 0,
@@ -259,7 +322,6 @@
       }
     };
 
-    // Listener global para capturar errores no controlados de JavaScript en el cliente
     window.addEventListener("error", (event) => {
       try {
         window.telemetry.logError("UnhandledClientError", event.error || { message: event.message }, {
@@ -268,26 +330,25 @@
           colno: event.colno
         });
       } catch (e) {
-        console.error("[Telemetry FailSafe] Error al registrar UnhandledClientError:", e);
+        console.error("[Telemetry FailSafe] Error:", e);
       }
     });
 
-    // Captura adicional de promesas rechazadas no manejadas
     window.addEventListener("unhandledrejection", (event) => {
       try {
-        window.telemetry.logError("UnhandledPromiseRejection", event.reason || { message: "Unhandled promise rejection" });
+        window.telemetry.logError("UnhandledPromiseRejection", event.reason || { message: "Unhandled rejection" });
       } catch (e) {
-        console.error("[Telemetry FailSafe] Error al registrar UnhandledPromiseRejection:", e);
+        console.error("[Telemetry FailSafe] Error:", e);
       }
     });
   </script>
 
-  <!-- Lógica de Negocio, ConfigCat Feature Flagging, User Targeting e Interacción UI -->
+  <!-- Lógica de Negocio, Login por Correo y ConfigCat Feature Flagging -->
   <script type="text/javascript">
     const SDK_KEY = "configcat-sdk-1/rjDfCNA7ZUuM4iC_A6A2fQ/IdaMKPoRGkm4k4aOlW3P7g";
     const FLAG_NAME = "dark_mode_enabled";
 
-    // Elementos DOM principales
+    // Elementos DOM de Interfaz
     const toggleBtn = document.getElementById("theme-toggle") || document.getElementById("dark-mode-toggle");
     const disabledNotice = document.getElementById("disabled-notice");
     const flagStatusText = document.getElementById("flag-status-text");
@@ -296,7 +357,17 @@
     const iconSun = document.getElementById("icon-sun");
     const buttonLabel = document.getElementById("button-label");
 
-    // Elementos DOM del simulador de targeting y porcentaje (Taller 6)
+    // Elementos DOM del Login
+    const inputEmail = document.getElementById("input-email");
+    const btnLoginSubmit = document.getElementById("btn-login-submit");
+    const btnQuickDev = document.getElementById("btn-quick-dev");
+    const btnQuickCanary = document.getElementById("btn-quick-canary");
+    const loginFormView = document.getElementById("login-form-view");
+    const loginActiveView = document.getElementById("login-active-view");
+    const activeUserEmail = document.getElementById("active-user-email");
+    const btnLogout = document.getElementById("btn-logout");
+
+    // Elementos DOM del Simulador / Observabilidad
     const activeUserBadge = document.getElementById("active-user-badge");
     const userIdentifierDisplay = document.getElementById("user-identifier-display");
     const userEmailDisplay = document.getElementById("user-email-display");
@@ -308,46 +379,92 @@
 
     let configCatClient = null;
 
-    // Perfiles predefinidos para la simulación en 3 fases del Taller 6
+    // Perfiles Predefinidos
     const USER_PROFILES = {
       internal: {
         identifier: "dev_team_internal",
         email: "dev@equipo.com",
         custom: { role: "internal" },
         label: "Fase 1: Interno",
-        badgeClass: "px-2 py-0.5 text-[11px] font-semibold rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
+        badgeClass: "px-2 py-0.5 text-[10px] font-semibold rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
       },
       canary: {
         identifier: "canary_user_" + Math.random().toString(36).substring(2, 7),
-        email: "beta_tester@canary.io",
+        email: "usuario_" + Math.random().toString(36).substring(2, 6) + "@canary.io",
         custom: { role: "canary" },
         label: "Fase 2: Canario %",
-        badgeClass: "px-2 py-0.5 text-[11px] font-semibold rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300"
+        badgeClass: "px-2 py-0.5 text-[10px] font-semibold rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300"
       },
       public: {
         identifier: "public_anonymous_user",
-        email: "guest@publico.com",
+        email: "invitado@publico.com",
         custom: { role: "public" },
         label: "Fase 3: General",
-        badgeClass: "px-2 py-0.5 text-[11px] font-semibold rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        badgeClass: "px-2 py-0.5 text-[10px] font-semibold rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
       }
     };
 
-    // Estado del usuario activo
     let activeProfileKey = "internal";
     let currentUser = { ...USER_PROFILES.internal };
 
-    // Función para actualizar la interfaz del simulador
-    function updateSimulatorUI() {
-      if (userIdentifierDisplay) userIdentifierDisplay.textContent = currentUser.identifier;
-      if (userEmailDisplay) userEmailDisplay.textContent = currentUser.email;
-      if (activeUserBadge) {
-        const profile = USER_PROFILES[activeProfileKey] || USER_PROFILES.internal;
-        activeUserBadge.textContent = profile.label;
-        activeUserBadge.className = profile.badgeClass;
+    // Iniciar Sesión con un Correo Específico
+    function loginWithEmail(email) {
+      const cleanEmail = (email || "").trim().toLowerCase();
+      if (!cleanEmail) return;
+
+      if (cleanEmail === "dev@equipo.com") {
+        activeProfileKey = "internal";
+        currentUser = { ...USER_PROFILES.internal, email: cleanEmail };
+      } else {
+        activeProfileKey = "canary";
+        currentUser = {
+          identifier: "user_" + cleanEmail.replace(/[^a-zA-Z0-9]/g, "_"),
+          email: cleanEmail,
+          custom: { role: "external" },
+          label: "Fase 2: Canario %",
+          badgeClass: "px-2 py-0.5 text-[10px] font-semibold rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300"
+        };
       }
 
-      // Estilo activo para botones
+      // Actualizar UI del Login
+      if (loginFormView) loginFormView.classList.add("hidden");
+      if (loginActiveView) loginActiveView.classList.remove("hidden");
+      if (activeUserEmail) activeUserEmail.textContent = currentUser.email;
+      if (inputEmail) inputEmail.value = currentUser.email;
+
+      updateSimulatorUI();
+      evaluateWithUser("loginWithEmail");
+    }
+
+    // Cerrar Sesión
+    function logout() {
+      activeProfileKey = "public";
+      currentUser = {
+        identifier: "unidentified_guest",
+        email: "",
+        custom: { role: "unidentified" },
+        label: "Desconectado",
+        badgeClass: "px-2 py-0.5 text-[10px] font-semibold rounded-md bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300"
+      };
+
+      if (loginFormView) loginFormView.classList.remove("hidden");
+      if (loginActiveView) loginActiveView.classList.add("hidden");
+      if (inputEmail) inputEmail.value = "";
+
+      updateSimulatorUI();
+      evaluateWithUser("logout");
+    }
+
+    // Actualizar Panel de Observabilidad
+    function updateSimulatorUI() {
+      if (userIdentifierDisplay) userIdentifierDisplay.textContent = currentUser.identifier;
+      if (userEmailDisplay) userEmailDisplay.textContent = currentUser.email || "(Sin correo)";
+      if (activeUserBadge) {
+        const profile = USER_PROFILES[activeProfileKey] || currentUser;
+        activeUserBadge.textContent = profile.label || "Fase: Activa";
+        activeUserBadge.className = profile.badgeClass || "px-2 py-0.5 text-[10px] font-semibold rounded-md bg-slate-100";
+      }
+
       const buttons = [
         { key: "internal", el: btnRoleInternal },
         { key: "canary", el: btnRoleCanary },
@@ -357,14 +474,14 @@
       buttons.forEach(({ key, el }) => {
         if (!el) return;
         if (key === activeProfileKey) {
-          el.className = "px-2 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white shadow-sm transition-colors text-center cursor-pointer";
+          el.className = "px-2 py-1 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm transition-colors text-center cursor-pointer";
         } else {
-          el.className = "px-2 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-center cursor-pointer";
+          el.className = "px-2 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-center cursor-pointer";
         }
       });
     }
 
-    // Función para actualizar los elementos visuales del botón según la clase 'dark' en <html>
+    // Actualizar Visuales del Botón de Modo Oscuro
     function updateButtonVisuals() {
       const isDark = document.documentElement.classList.contains("dark");
       if (isDark) {
@@ -378,7 +495,7 @@
       }
     }
 
-    // Alternar tema con bloque try/catch y registro de telemetría ThemeToggled
+    // Alternar Tema Visual
     if (toggleBtn) {
       toggleBtn.addEventListener("click", () => {
         try {
@@ -386,25 +503,22 @@
           updateButtonVisuals();
           const currentTheme = isDark ? "dark" : "light";
 
-          // Registro seguro del evento
           window.telemetry.logEvent("ThemeToggled", {
             theme: currentTheme,
             user: currentUser.identifier,
+            email: currentUser.email,
             timestamp: Date.now()
           });
         } catch (uiError) {
-          window.telemetry.logError("ThemeToggleUIError", uiError, {
-            action: "toggleThemeClick"
-          });
-          console.error("Error al alternar el tema visual:", uiError);
+          window.telemetry.logError("ThemeToggleUIError", uiError, { action: "toggleThemeClick" });
+          console.error("Error al alternar tema:", uiError);
         }
       });
     }
 
-    // Actualizar visibilidad del botón según el valor del flag booleano
+    // Aplicar Estado de Feature Toggle
     function applyFeatureToggle(isEnabled) {
       if (isEnabled === true) {
-        // Mostrar botón centrado
         if (toggleBtn) {
           toggleBtn.classList.remove("hidden");
           toggleBtn.style.display = "inline-flex";
@@ -412,15 +526,12 @@
         if (disabledNotice) {
           disabledNotice.classList.add("hidden");
         }
-
-        // Actualizar badges
-        if (flagStatusText) flagStatusText.textContent = `dark_mode_enabled = true (ON para ${currentUser.identifier})`;
+        if (flagStatusText) flagStatusText.textContent = `dark_mode_enabled = true (ON para ${currentUser.email || currentUser.identifier})`;
         if (flagStatusBadge) {
-          flagStatusBadge.textContent = "Activo";
-          flagStatusBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300";
+          flagStatusBadge.textContent = "Activo (ON)";
+          flagStatusBadge.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300";
         }
       } else {
-        // Ocultar el botón por completo
         if (toggleBtn) {
           toggleBtn.classList.add("hidden");
           toggleBtn.style.display = "none";
@@ -428,23 +539,20 @@
         if (disabledNotice) {
           disabledNotice.classList.remove("hidden");
         }
-
-        // Actualizar badges
-        if (flagStatusText) flagStatusText.textContent = `dark_mode_enabled = false (OFF para ${currentUser.identifier})`;
+        if (flagStatusText) flagStatusText.textContent = `dark_mode_enabled = false (OFF para ${currentUser.email || currentUser.identifier})`;
         if (flagStatusBadge) {
-          flagStatusBadge.textContent = "Inactivo";
-          flagStatusBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300";
+          flagStatusBadge.textContent = "Inactivo (OFF)";
+          flagStatusBadge.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300";
         }
       }
       updateButtonVisuals();
     }
 
-    // Evaluar el Feature Flag pasando el User Object a ConfigCat
+    // Evaluar Flag con el Usuario Actual en ConfigCat
     async function evaluateWithUser(source = "manual") {
       if (!configCatClient) return;
 
       try {
-        // Pasamos el currentUser para que ConfigCat evalúe Targeting Rules y Percentage Rollout
         const value = await configCatClient.getValueAsync(FLAG_NAME, false, currentUser);
 
         window.telemetry.logEvent("FlagEvaluated", {
@@ -452,10 +560,11 @@
           value: value,
           source: source,
           user: currentUser.identifier,
+          email: currentUser.email,
           role: currentUser.custom?.role
         });
 
-        console.log(`ConfigCat (${source}) - dark_mode_enabled:`, value, "para usuario:", currentUser);
+        console.log(`ConfigCat (${source}) - dark_mode_enabled:`, value, "Usuario:", currentUser);
         applyFeatureToggle(value);
       } catch (evalError) {
         window.telemetry.logError("FlagEvaluationError", evalError, {
@@ -463,52 +572,66 @@
           source: source,
           user: currentUser.identifier
         });
-        console.error("Error al evaluar el flag con usuario:", evalError);
+        console.error("Error al evaluar con ConfigCat:", evalError);
         applyFeatureToggle(false);
       }
     }
 
-    // Configurar listeners de la simulación de liberación segura
-    function setupSimulatorEvents() {
+    // Configurar Eventos del Login y Simulador
+    function setupAppEvents() {
+      // 1. Submit de Login Manual
+      if (btnLoginSubmit && inputEmail) {
+        btnLoginSubmit.addEventListener("click", () => {
+          loginWithEmail(inputEmail.value);
+        });
+        inputEmail.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") loginWithEmail(inputEmail.value);
+        });
+      }
+
+      // 2. Logout
+      if (btnLogout) {
+        btnLogout.addEventListener("click", logout);
+      }
+
+      // 3. Sugerencias Rápidas
+      if (btnQuickDev) {
+        btnQuickDev.addEventListener("click", () => {
+          loginWithEmail("dev@equipo.com");
+        });
+      }
+      if (btnQuickCanary) {
+        btnQuickCanary.addEventListener("click", () => {
+          const randEmail = "usuario_" + Math.random().toString(36).substring(2, 6) + "@canary.io";
+          loginWithEmail(randEmail);
+        });
+      }
+
+      // 4. Perfiles / Semillas Taller 6 (Pytest & Demo)
       if (btnRoleInternal) {
         btnRoleInternal.addEventListener("click", () => {
-          activeProfileKey = "internal";
-          currentUser = { ...USER_PROFILES.internal };
-          updateSimulatorUI();
-          evaluateWithUser("roleChangeInternal");
+          loginWithEmail("dev@equipo.com");
         });
       }
-
       if (btnRoleCanary) {
         btnRoleCanary.addEventListener("click", () => {
-          activeProfileKey = "canary";
-          currentUser = { ...USER_PROFILES.canary };
-          updateSimulatorUI();
-          evaluateWithUser("roleChangeCanary");
+          const randEmail = "usuario_" + Math.random().toString(36).substring(2, 6) + "@canary.io";
+          loginWithEmail(randEmail);
         });
       }
-
       if (btnRolePublic) {
         btnRolePublic.addEventListener("click", () => {
-          activeProfileKey = "public";
-          currentUser = { ...USER_PROFILES.public };
-          updateSimulatorUI();
-          evaluateWithUser("roleChangePublic");
+          loginWithEmail("invitado@publico.com");
         });
       }
-
       if (btnNewCanaryUser) {
         btnNewCanaryUser.addEventListener("click", () => {
-          activeProfileKey = "canary";
-          const newId = "canary_user_" + Math.random().toString(36).substring(2, 7);
-          USER_PROFILES.canary.identifier = newId;
-          USER_PROFILES.canary.email = `${newId}@canary.io`;
-          currentUser = { ...USER_PROFILES.canary };
-          updateSimulatorUI();
-          evaluateWithUser("newRandomCanaryUser");
+          const randEmail = "usuario_" + Math.random().toString(36).substring(2, 6) + "@canary.io";
+          loginWithEmail(randEmail);
         });
       }
 
+      // 5. Simular Error Telemetría
       if (btnSimulateError) {
         btnSimulateError.addEventListener("click", () => {
           window.telemetry.logError("SimulatedRollbackTestError", new Error("Error forzado de prueba para validar telemetría y regla de rollback."), {
@@ -517,22 +640,27 @@
         });
       }
 
+      // Iniciar logueado con dev@equipo.com por defecto para demo
+      if (inputEmail) inputEmail.value = "dev@equipo.com";
+      if (loginFormView) loginFormView.classList.add("hidden");
+      if (loginActiveView) loginActiveView.classList.remove("hidden");
+      if (activeUserEmail) activeUserEmail.textContent = "dev@equipo.com";
       updateSimulatorUI();
     }
 
-    // Inicializar ConfigCat SDK con observabilidad, targeting y manejo seguro de errores
+    // Inicializar ConfigCat SDK
     function initConfigCat() {
-      setupSimulatorEvents();
+      setupAppEvents();
 
       if (typeof configcat === "undefined") {
         const cdnError = new Error("ConfigCat SDK no se pudo cargar desde el CDN.");
         window.telemetry.logError("ConfigCatCDNError", cdnError, { sdk: "configcat" });
-        console.error("ConfigCat SDK no se pudo cargar desde el CDN.");
+        console.error("ConfigCat SDK no se pudo cargar.");
 
         if (flagStatusText) flagStatusText.textContent = "Error al cargar ConfigCat SDK";
         if (flagStatusBadge) {
           flagStatusBadge.textContent = "Error CDN";
-          flagStatusBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300";
+          flagStatusBadge.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300";
         }
         applyFeatureToggle(false);
         return;
@@ -552,17 +680,14 @@
           }
         );
 
-        // Evaluación inicial con el usuario activo
         evaluateWithUser("initialEvaluation");
-
       } catch (err) {
         window.telemetry.logError("ConfigCatInitError", err, { sdkKey: SDK_KEY });
-        console.error("Error al inicializar cliente ConfigCat:", err);
+        console.error("Error al inicializar ConfigCat:", err);
         applyFeatureToggle(false);
       }
     }
 
-    // Iniciar cuando el DOM esté listo
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", initConfigCat);
     } else {
