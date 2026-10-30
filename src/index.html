@@ -272,7 +272,12 @@
           <!-- Cuántos les falló el sistema -->
           <div class="flex justify-between items-center pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
             <span class="text-slate-400 text-[11px]">Usuarios con Fallo:</span>
-            <span id="telemetry-error-counts" class="text-slate-700 dark:text-slate-200 font-semibold">0 usuarios afectados (0 fallos)</span>
+            <div id="telemetry-error-counts" class="text-right">
+              <span class="inline-flex items-center gap-1.5">
+                <span class="font-bold text-slate-700 dark:text-slate-200">0 de 0 usuarios</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">0 fallos</span>
+              </span>
+            </div>
           </div>
 
           <!-- Hora del Último Evento -->
@@ -464,11 +469,24 @@
         const affectedCount = this.failingUsers.size;
         const totalUsers = Math.max(this.connectedUsers.size, affectedCount > 0 ? affectedCount : 1);
 
+        const usersLabel = (totalUsers === 1) ? "usuario" : "usuarios";
+        const errorLabel = (this.errorCount === 1) ? "fallo" : "fallos";
+
         if (countsEl) {
           if (affectedCount === 0 && this.errorCount === 0) {
-            countsEl.textContent = `0 usuarios afectados (0 fallos)`;
+            countsEl.innerHTML = `
+              <span class="inline-flex items-center gap-1.5">
+                <span class="font-bold text-slate-700 dark:text-slate-200">0 de ${totalUsers} ${usersLabel}</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">0 fallos</span>
+              </span>
+            `;
           } else {
-            countsEl.textContent = `${affectedCount} de ${totalUsers} usuario(s) afectado(s) (${this.errorCount} fallos)`;
+            countsEl.innerHTML = `
+              <span class="inline-flex items-center gap-1.5">
+                <span class="font-bold text-rose-600 dark:text-rose-400">${affectedCount} de ${totalUsers} ${usersLabel}</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300">${this.errorCount} ${errorLabel}</span>
+              </span>
+            `;
           }
         }
 
@@ -476,7 +494,7 @@
           rateEl.className = "text-rose-600 dark:text-rose-400 font-bold";
           if (banner) banner.classList.remove("hidden");
           if (detail) {
-            detail.textContent = `La tasa de error superó el límite: ${rate.toFixed(1)}% (${this.errorCount} fallos en ${affectedCount} usuario(s)). Apagar toggle en ConfigCat inmediatamente.`;
+            detail.textContent = `La tasa de error superó el límite: ${rate.toFixed(1)}% (${this.errorCount} ${errorLabel} en ${affectedCount} ${usersLabel}). Apagar toggle en ConfigCat inmediatamente.`;
           }
         } else {
           rateEl.className = "text-emerald-600 dark:text-emerald-400 font-bold";
