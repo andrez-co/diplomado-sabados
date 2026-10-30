@@ -245,10 +245,15 @@
             <span class="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
               <span>👥</span> Actividad de Usuarios
             </span>
-            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-              <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              En vivo
-            </span>
+            <div class="flex items-center gap-2">
+              <button id="btn-reset-telemetry" type="button" title="Reiniciar métricas y conteo de usuarios" class="text-[10px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer">
+                🔄 Reiniciar
+              </button>
+              <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                En vivo
+              </span>
+            </div>
           </div>
 
           <!-- Último Usuario Conectado -->
@@ -363,15 +368,24 @@
       const liveTime = document.getElementById("live-feed-time");
 
       if (data.email) {
-        window.telemetry.connectedUsers.add(data.email);
         if (liveEmail) liveEmail.textContent = data.email;
       } else if (data.identifier) {
-        window.telemetry.connectedUsers.add(data.identifier);
         if (liveEmail) liveEmail.textContent = data.identifier;
       }
       if (liveTime) liveTime.textContent = data.time || new Date().toLocaleTimeString();
 
+      if (data.type === "USER_LOGIN" && data.email) {
+        window.telemetry.registerLogin(data.email);
+      }
+
+      if (data.type === "USER_LOGOUT" && data.email) {
+        window.telemetry.registerLogout(data.email);
+      }
+
       if (liveResult && data.type === "EVALUATION") {
+        if (data.email) {
+          window.telemetry.registerLogin(data.email);
+        }
         if (data.flagValue === true) {
           liveResult.textContent = "✅ Habilitado (ON)";
           liveResult.className = "font-bold text-emerald-600 dark:text-emerald-400";
@@ -382,7 +396,7 @@
       }
 
       if (data.type === "ERROR") {
-        const errorUser = data.email || data.user || "Usuario externo";
+        const errorUser = (data.email || data.user || "Usuario externo").trim().toLowerCase();
         // Si este usuario ya tiene registrado un fallo, mantener exactamente 1 fallo por usuario
         if (window.telemetry.failingUsers.has(errorUser)) {
           return;
@@ -416,14 +430,65 @@
       errorCount: 0,
       events: [],
       errors: [],
-      connectedUsers: new Set(),
+      loggedUsers: new Set(),
       failingUsers: new Set(),
+
+      get connectedUsers() {
+        return this.loggedUsers;
+      },
+
+      registerLogin(email) {
+        if (!email) return;
+        const clean = email.trim().toLowerCase();
+        this.loggedUsers.add(clean);
+        this.saveStoredUsers();
+        this.updateMetricsUI();
+      },
+
+      registerLogout(email) {
+        if (!email) return;
+        const clean = email.trim().toLowerCase();
+        this.loggedUsers.delete(clean);
+        this.failingUsers.delete(clean);
+        this.saveStoredUsers();
+        this.updateMetricsUI();
+      },
+
+      resetAllUsers() {
+        this.loggedUsers.clear();
+        this.failingUsers.clear();
+        this.eventCount = 0;
+        this.errorCount = 0;
+        this.events = [];
+        this.errors = [];
+        this.saveStoredUsers();
+        this.updateMetricsUI();
+      },
+
+      saveStoredUsers() {
+        try {
+          localStorage.setItem("active_logged_users", JSON.stringify(Array.from(this.loggedUsers)));
+          localStorage.setItem("failing_logged_users", JSON.stringify(Array.from(this.failingUsers)));
+        } catch (e) {}
+      },
+
+      loadStoredUsers() {
+        try {
+          const raw = localStorage.getItem("active_logged_users");
+          if (raw) {
+            const list = JSON.parse(raw);
+            if (Array.isArray(list)) list.forEach(u => this.loggedUsers.add(u));
+          }
+          const rawFail = localStorage.getItem("failing_logged_users");
+          if (rawFail) {
+            const failList = JSON.parse(rawFail);
+            if (Array.isArray(failList)) failList.forEach(u => this.failingUsers.add(u));
+          }
+        } catch (e) {}
+      },
 
       logEvent(eventName, data = {}) {
         this.eventCount++;
-        if (data.email) {
-          this.connectedUsers.add(data.email);
-        }
         const payload = {
           timestamp: new Date().toISOString(),
           type: "EVENT",
@@ -438,17 +503,19 @@
       },
 
       logError(errorName, error = {}, context = {}, shouldBroadcast = true) {
-        const userEmail = context.email || context.user || (currentUser && currentUser.email) || "Usuario anónimo";
+        const userEmail = context.email || context.user || (currentUser && currentUser.email);
+        const cleanEmail = userEmail ? userEmail.trim().toLowerCase() : null;
 
         // Si es una simulación y el usuario ya tiene su fallo registrado, no duplicar (1 fallo por usuario)
-        if (userEmail && this.failingUsers.has(userEmail) && context.isSimulation) {
+        if (cleanEmail && this.failingUsers.has(cleanEmail) && context.isSimulation) {
           return null;
         }
 
         this.errorCount++;
-        if (userEmail) {
-          this.connectedUsers.add(userEmail);
-          this.failingUsers.add(userEmail);
+        if (cleanEmail) {
+          this.loggedUsers.add(cleanEmail);
+          this.failingUsers.add(cleanEmail);
+          this.saveStoredUsers();
         }
         const payload = {
           timestamp: new Date().toISOString(),
@@ -456,7 +523,7 @@
           name: errorName,
           message: error?.message || String(error),
           stack: error?.stack || null,
-          user: userEmail,
+          user: cleanEmail || "Usuario anónimo",
           ...context
         };
         this.errors.push(payload);
@@ -469,7 +536,7 @@
             type: "ERROR",
             errorName: errorName,
             message: payload.message,
-            email: userEmail,
+            email: cleanEmail,
             time: new Date().toLocaleTimeString()
           });
         }
@@ -495,7 +562,7 @@
         rateEl.textContent = `${rate.toFixed(1)}% (Límite: >0.5%)`;
 
         const affectedCount = this.failingUsers.size;
-        const totalUsers = Math.max(this.connectedUsers.size, affectedCount > 0 ? affectedCount : 1);
+        const totalUsers = Math.max(this.loggedUsers.size, affectedCount > 0 ? affectedCount : 1);
 
         const usersLabel = (totalUsers === 1) ? "usuario" : "usuarios";
         const errorLabel = (this.errorCount === 1) ? "fallo" : "fallos";
@@ -530,6 +597,8 @@
         }
       }
     };
+
+    window.telemetry.loadStoredUsers();
 
     window.addEventListener("error", (event) => {
       try {
@@ -627,6 +696,14 @@
 
       isAuthenticated = true;
 
+      // Registrar login en el sistema de telemetría y sincronizar entre pestañas
+      window.telemetry.registerLogin(cleanEmail);
+      broadcastTelemetryEvent({
+        type: "USER_LOGIN",
+        email: cleanEmail,
+        time: new Date().toLocaleTimeString()
+      });
+
       // Ocultar pantalla de Login y mostrar la Aplicación
       if (loginView) loginView.classList.add("hidden");
       if (appView) appView.classList.remove("hidden");
@@ -656,6 +733,16 @@
 
     // Cerrar Sesión
     function doLogout() {
+      const loggedOutEmail = (currentUser && currentUser.email) ? currentUser.email.trim().toLowerCase() : null;
+      if (loggedOutEmail) {
+        window.telemetry.registerLogout(loggedOutEmail);
+        broadcastTelemetryEvent({
+          type: "USER_LOGOUT",
+          email: loggedOutEmail,
+          time: new Date().toLocaleTimeString()
+        });
+      }
+
       isAuthenticated = false;
       currentUser = {
         identifier: "unidentified_guest",
@@ -811,16 +898,28 @@
       if (btnNewCanaryUser) btnNewCanaryUser.addEventListener("click", () => doLogin("canary2@canary.io"));
 
       // 5. Botón de simular error en cliente (panel Dev)
-      let devSimCount = 1;
       if (btnSimulateError) {
         btnSimulateError.addEventListener("click", () => {
-          const simEmail = `canary_${devSimCount++}@canary.io`;
-          window.telemetry.connectedUsers.add(simEmail);
+          // Seleccionar un usuario logueado que no haya fallado aún, o el usuario activo
+          const candidates = Array.from(window.telemetry.loggedUsers).filter(u => !window.telemetry.failingUsers.has(u));
+          const targetUser = candidates.length > 0 ? candidates[0] : (currentUser.email || "dev@equipo.com");
+
           window.telemetry.logError("SimulatedClientError", new Error("Error forzado de prueba en cliente para verificar umbral de rollback."), {
             source: "devPanelSimulation",
-            email: simEmail,
+            email: targetUser,
             isSimulation: true
           });
+        });
+      }
+
+      // 5.1 Botón para reiniciar métricas de telemetría y lista de usuarios
+      const btnResetTelemetry = document.getElementById("btn-reset-telemetry");
+      if (btnResetTelemetry) {
+        btnResetTelemetry.addEventListener("click", () => {
+          window.telemetry.resetAllUsers();
+          if (isAuthenticated && currentUser && currentUser.email) {
+            window.telemetry.registerLogin(currentUser.email);
+          }
         });
       }
 
